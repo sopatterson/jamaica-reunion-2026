@@ -175,14 +175,7 @@
 
         /* Scroll Indicator */
         .scroll-down {
-            position: absolute;
-            bottom: 3rem;
-            left: 50%;
-            transform: translateX(-50%);
-            color: var(--gold);
-            font-size: 2.5rem;
-            animation: bounce 2s infinite;
-            cursor: pointer;
+            display: none;
         }
 
         @keyframes bounce {
@@ -665,10 +658,74 @@
 
         /* Responsive */
         @media (max-width: 768px) {
+            .hero {
+                padding: 2rem 1rem;
+                min-height: 100svh;
+            }
+
+            .hero h1 {
+                font-size: clamp(2rem, 10vw, 3.5rem);
+            }
+
+            .hero .resort-name {
+                font-size: clamp(1.3rem, 5vw, 2rem);
+            }
+
+            .hero .location {
+                font-size: clamp(0.9rem, 3.5vw, 1.2rem);
+                letter-spacing: 1px;
+            }
+
+            .hero .dates-box {
+                padding: 1.5rem 2rem;
+                margin: 1.5rem 0;
+            }
+
+            .hero .dates {
+                font-size: clamp(1rem, 3.5vw, 1.4rem);
+            }
+
+            .hero .tagline {
+                font-size: clamp(0.95rem, 3vw, 1.2rem);
+                margin-top: 1rem;
+                padding: 0 0.5rem;
+            }
+
+            .container {
+                padding: 2.5rem 1rem;
+            }
+
+            h2 {
+                font-size: clamp(1.8rem, 7vw, 2.8rem);
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .info-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .properties-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .urgent-banner {
+                padding: 2rem 1.5rem;
+            }
+
+            .urgent-banner h3 {
+                font-size: clamp(1.4rem, 5vw, 2rem);
+            }
+
             .day-header {
                 flex-direction: column;
                 text-align: center;
                 gap: 1rem;
+                padding: 1.5rem;
             }
 
             .day-number {
@@ -679,6 +736,49 @@
 
             .day-details {
                 padding: 1.5rem;
+            }
+
+            .day-info h3 {
+                font-size: 1.3rem;
+            }
+
+            .day-title {
+                font-size: 1rem;
+            }
+
+            footer {
+                padding: 2.5rem 1rem;
+            }
+
+            footer .footer-logo {
+                font-size: 1.5rem;
+            }
+
+            footer p {
+                font-size: 1rem;
+            }
+
+            .action-steps ul {
+                padding-left: 0;
+            }
+
+            .contact-card {
+                padding: 2rem 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero .dates-box {
+                padding: 1.2rem 1.2rem;
+                border-width: 2px;
+            }
+
+            .property-header h3 {
+                font-size: 1.8rem;
+            }
+
+            .price-highlight {
+                font-size: 1.4rem;
             }
         }
 
