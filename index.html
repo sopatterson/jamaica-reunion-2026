@@ -806,7 +806,7 @@
             height: 240px;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
         }
 
         .carousel-slide img {
@@ -822,8 +822,13 @@
         }
 
         @keyframes scrollLeft {
-            0%   { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
         }
 
         @media (max-width: 768px) {
@@ -876,17 +881,17 @@
     <!-- Photo Carousel -->
     <div class="carousel-section">
         <div class="carousel-track">
-            <div class="carousel-slide"><img src="IMG_1230.jpeg" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="IMG_1232.jpeg" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="IMG_1487.JPEG" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="IMG_6489.JPEG" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="IMG_6980.JPG" alt="Family reunion photo"></div>
+            <div class="carousel-slide"><img src="images/IMG_1230.jpeg" alt="Family reunion photo"></div>
+            <div class="carousel-slide"><img src="images/IMG_1232.jpeg" alt="Family reunion photo"></div>
+            <div class="carousel-slide"><img src="images/IMG_1487.JPEG" alt="Family reunion photo"></div>
+            <div class="carousel-slide"><img src="images/IMG_6489.JPEG" alt="Family reunion photo"></div>
+            <div class="carousel-slide"><img src="images/IMG_6980.JPG" alt="Family reunion photo"></div>
             <!-- Duplicates for seamless loop -->
-            <div class="carousel-slide"><img src="IMG_1230.jpeg" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="IMG_1232.jpeg" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="IMG_1487.JPEG" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="IMG_6489.JPEG" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="IMG_6980.JPG" alt="Family reunion photo"></div>
+            <div class="carousel-slide"><img src="images/IMG_1230.jpeg" alt="Family reunion photo"></div>
+            <div class="carousel-slide"><img src="images/IMG_1232.jpeg" alt="Family reunion photo"></div>
+            <div class="carousel-slide"><img src="images/IMG_1487.JPEG" alt="Family reunion photo"></div>
+            <div class="carousel-slide"><img src="images/IMG_6489.JPEG" alt="Family reunion photo"></div>
+            <div class="carousel-slide"><img src="images/IMG_6980.JPG" alt="Family reunion photo"></div>
         </div>
     </div>
 
