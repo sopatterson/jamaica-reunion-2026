@@ -1045,7 +1045,8 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
         }
 
-        .carousel-slide img {
+        .carousel-slide img,
+        .carousel-slide video {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -1054,7 +1055,8 @@
             transition: transform 0.4s ease;
         }
 
-        .carousel-slide:hover img {
+        .carousel-slide:hover img,
+        .carousel-slide:hover video {
             transform: scale(1.05);
         }
 
@@ -1064,7 +1066,7 @@
             }
 
             100% {
-                transform: translateX(-50%);
+                transform: translateX(calc(-50% - 0.5rem));
             }
         }
 
@@ -1117,19 +1119,7 @@
 
     <!-- Photo Carousel -->
     <div class="carousel-section">
-        <div class="carousel-track">
-            <div class="carousel-slide"><img src="images/IMG_1230.jpeg" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="images/IMG_1232.jpeg" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="images/IMG_1487.JPEG" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="images/IMG_6489.JPEG" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="images/IMG_6980.JPG" alt="Family reunion photo"></div>
-            <!-- Duplicates for seamless loop -->
-            <div class="carousel-slide"><img src="images/IMG_1230.jpeg" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="images/IMG_1232.jpeg" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="images/IMG_1487.JPEG" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="images/IMG_6489.JPEG" alt="Family reunion photo"></div>
-            <div class="carousel-slide"><img src="images/IMG_6980.JPG" alt="Family reunion photo"></div>
-        </div>
+        <div class="carousel-track" aria-label="Family photo and video carousel"></div>
     </div>
 
     <!-- Main Content -->
@@ -1599,6 +1589,95 @@
     </footer>
 
     <script>
+        const carouselMedia = [
+            { type: 'image', src: 'images/20131014_173509.jpg' },
+            { type: 'image', src: 'images/20170610_141020.jpg' },
+            { type: 'image', src: 'images/20170610_145150.jpg' },
+            { type: 'image', src: 'images/20170701_201054.jpg' },
+            { type: 'image', src: 'images/20170701_230754.jpg' },
+            { type: 'video', src: 'images/20180407_201705.mp4' },
+            { type: 'image', src: 'images/20180408_133426_001.jpg' },
+            { type: 'image', src: 'images/20220813_123108.jpg' },
+            { type: 'image', src: 'images/DDD338D0-8565-44B1-8315-0DBD6ED43E01.jpeg' },
+            { type: 'image', src: 'images/DRAC3929.JPG' },
+            { type: 'image', src: 'images/DRAC4996.JPG' },
+            { type: 'image', src: 'images/IMG-20240405-WA0003.jpg' },
+            { type: 'image', src: 'images/IMG_0016.jpeg' },
+            { type: 'video', src: 'images/IMG_0511.MOV' },
+            { type: 'image', src: 'images/IMG_1230.jpeg' },
+            { type: 'image', src: 'images/IMG_1232.jpeg' },
+            { type: 'image', src: 'images/IMG_1469.JPG' },
+            { type: 'image', src: 'images/IMG_1471 Background Removed.jpeg' },
+            { type: 'image', src: 'images/IMG_1472.JPG' },
+            { type: 'image', src: 'images/IMG_1487.JPEG' },
+            { type: 'image', src: 'images/IMG_1743.jpg' },
+            { type: 'image', src: 'images/IMG_5082.jpeg' },
+            { type: 'image', src: 'images/IMG_5637.jpeg' },
+            { type: 'image', src: 'images/IMG_6489.JPEG' },
+            { type: 'image', src: 'images/IMG_6980.JPG' },
+            { type: 'image', src: 'images/IMG_6981.jpeg' },
+            { type: 'image', src: 'images/Untitled 30.jpg' },
+            { type: 'image', src: 'images/andersons.jpg' },
+            { type: 'image', src: 'images/nj-fam.JPG' }
+        ];
+
+        function shuffleMedia(media) {
+            for (let index = media.length - 1; index > 0; index -= 1) {
+                const randomIndex = Math.floor(Math.random() * (index + 1));
+                [media[index], media[randomIndex]] = [media[randomIndex], media[index]];
+            }
+            return media;
+        }
+
+        function createCarouselSlide(media, isDuplicate) {
+            const slide = document.createElement('div');
+            slide.className = 'carousel-slide';
+            if (isDuplicate) slide.setAttribute('aria-hidden', 'true');
+
+            if (media.type === 'video') {
+                const video = document.createElement('video');
+                video.src = media.src;
+                video.muted = true;
+                video.defaultMuted = true;
+                video.loop = true;
+                video.playsInline = true;
+                video.preload = 'metadata';
+                slide.appendChild(video);
+            } else {
+                const image = document.createElement('img');
+                image.src = media.src;
+                image.alt = isDuplicate ? '' : 'Family reunion photo';
+                image.loading = 'lazy';
+                image.decoding = 'async';
+                slide.appendChild(image);
+            }
+
+            return slide;
+        }
+
+        function initializeCarousel() {
+            const track = document.querySelector('.carousel-track');
+            const randomizedMedia = shuffleMedia([...carouselMedia]);
+            [...randomizedMedia, ...randomizedMedia].forEach((media, index) => {
+                track.appendChild(createCarouselSlide(media, index >= randomizedMedia.length));
+            });
+            track.style.animationDuration = `${Math.max(30, randomizedMedia.length * 6)}s`;
+
+            const videoObserver = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    const video = entry.target;
+                    if (entry.isIntersecting) {
+                        video.play().catch(() => {});
+                    } else {
+                        video.pause();
+                    }
+                });
+            }, { threshold: 0.35 });
+            track.querySelectorAll('video').forEach(video => videoObserver.observe(video));
+        }
+
+        initializeCarousel();
+
         const rsvpEndpoint = 'https://script.google.com/macros/s/AKfycbyP_WliVMHQDVhYX1HX7oHkEYcRZcQKt3pfebS6VG9-x7dibMN4OVw1cfw6XLqSRPeA/exec';
         const rsvpStorageKey = 'jamaica-reunion-2026-rsvps';
         const rsvpRows = document.getElementById('rsvpRows');
