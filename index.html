@@ -1598,7 +1598,7 @@
             { type: 'video', src: 'images/20180407_201705.mp4' },
             { type: 'image', src: 'images/20180408_133426_001.jpg' },
             { type: 'image', src: 'images/20220813_123108.jpg' },
-            { type: 'image', src: 'images/DDD338D0-8565-44B1-8315-0DBD6ED43E01.jpeg' },
+            { type: 'image', src: 'images/DDD338D0-8565-44B1-8315-0DBD6ED43E01.jpeg', position: 'center bottom' },
             { type: 'image', src: 'images/DRAC3929.JPG' },
             { type: 'image', src: 'images/DRAC4996.JPG' },
             { type: 'image', src: 'images/IMG-20240405-WA0003.jpg' },
@@ -1649,6 +1649,7 @@
                 image.alt = isDuplicate ? '' : 'Family reunion photo';
                 image.loading = 'lazy';
                 image.decoding = 'async';
+                if (media.position) image.style.objectPosition = media.position;
                 slide.appendChild(image);
             }
 
