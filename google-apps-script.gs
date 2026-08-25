@@ -1,5 +1,6 @@
 const SPREADSHEET_ID = '1CnTfSMjKRbHTd1RVeWkvCULY-ds1HmdrC3HMQetoMuk';
 const SHEET_NAME = 'RSVP';
+const ARCHIVE_SHEET_NAME = 'RSVP Archive';
 
 const HEADERS = [
   'ID',
@@ -10,6 +11,7 @@ const HEADERS = [
   'Are You Coming',
   'Location'
 ];
+const ARCHIVE_HEADERS = [...HEADERS, 'Archived At'];
 
 const ATTENDANCE_OPTIONS = [
   'Yes',
@@ -69,6 +71,7 @@ function setupRsvpSheet() {
   sheet.getRange(2, 6, dataRowCount, 1).setDataValidation(attendanceValidation);
   sheet.getRange(2, 7, dataRowCount, 1).setDataValidation(locationValidation);
   sheet.autoResizeColumns(1, HEADERS.length);
+  getArchiveSheet(spreadsheet);
 }
 
 function doGet(event) {
@@ -108,7 +111,7 @@ function doPost(event) {
 
     if (request.action === 'delete') {
       deleteRsvp(request.id);
-      return jsonResponse({ success: true, id: request.id });
+      return jsonResponse({ success: true, id: request.id, archived: true });
     }
 
     return jsonResponse({ success: false, error: 'Unknown POST action.' });
@@ -198,7 +201,27 @@ function deleteRsvp(id) {
     throw new Error('RSVP was not found.');
   }
 
+  const rowValues = sheet.getRange(rowNumber, 1, 1, HEADERS.length).getValues()[0];
+  const archiveSheet = getArchiveSheet(sheet.getParent());
+  archiveSheet.appendRow([...rowValues, new Date()]);
   sheet.deleteRow(rowNumber);
+}
+
+function getArchiveSheet(spreadsheet) {
+  let archiveSheet = spreadsheet.getSheetByName(ARCHIVE_SHEET_NAME);
+  if (!archiveSheet) {
+    archiveSheet = spreadsheet.insertSheet(ARCHIVE_SHEET_NAME);
+  }
+
+  archiveSheet.getRange(1, 1, 1, ARCHIVE_HEADERS.length).setValues([ARCHIVE_HEADERS]);
+  archiveSheet.setFrozenRows(1);
+  archiveSheet.getRange(1, 1, 1, ARCHIVE_HEADERS.length)
+    .setBackground('#5a1f1f')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold');
+  archiveSheet.getRange('H:H').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  archiveSheet.autoResizeColumns(1, ARCHIVE_HEADERS.length);
+  return archiveSheet;
 }
 
 function findRowById(sheet, id) {

@@ -1866,9 +1866,11 @@
                 return;
             }
             try {
-                await requestRsvp('delete', { id: removed.id });
+                const result = await requestRsvp('delete', { id: removed.id });
                 saveChains.delete(removed);
-                saveStatus.textContent = 'Family removed from the shared RSVP spreadsheet.';
+                saveStatus.textContent = result.archived
+                    ? 'Family moved to the RSVP recovery archive.'
+                    : 'Family removed from the shared RSVP spreadsheet.';
             } catch (error) {
                 rsvps.splice(index, 0, removed);
                 saveLocally(`Could not delete: ${error.message}`);
