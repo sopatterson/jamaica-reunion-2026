@@ -5,7 +5,7 @@ const HEADERS = [
   'ID',
   'Family Name',
   'Total in Family',
-  'Age 13 and Below',
+  'Age 17 and Below',
   'Age 18 and Above',
   'Are You Coming',
   'Location'
@@ -29,6 +29,24 @@ function setupRsvpSheet() {
 
   if (!sheet) {
     sheet = spreadsheet.insertSheet(SHEET_NAME);
+  }
+
+  const existingHeaders = sheet.getLastColumn() > 0
+    ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0]
+    : [];
+  const teenColumn = existingHeaders.indexOf('Age 14 to 17') + 1;
+  if (teenColumn > 0) {
+    const childColumn = existingHeaders.indexOf('Age 13 and Below') + 1;
+    const lastRow = sheet.getLastRow();
+    if (childColumn > 0 && lastRow > 1) {
+      const childValues = sheet.getRange(2, childColumn, lastRow - 1, 1).getValues();
+      const teenValues = sheet.getRange(2, teenColumn, lastRow - 1, 1).getValues();
+      const combinedValues = childValues.map((row, index) => [
+        toNonNegativeInteger(row[0]) + toNonNegativeInteger(teenValues[index][0])
+      ]);
+      sheet.getRange(2, childColumn, combinedValues.length, 1).setValues(combinedValues);
+    }
+    sheet.deleteColumn(teenColumn);
   }
 
   sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
@@ -144,6 +162,10 @@ function upsertRsvp(rsvp) {
     coming: normalizeOption(rsvp.coming, ATTENDANCE_OPTIONS, 'Yes'),
     location: normalizeOption(rsvp.location, LOCATION_OPTIONS, 'Selection')
   };
+  const totalByAge = savedRsvp.children + savedRsvp.adults;
+  if (savedRsvp.total !== totalByAge) {
+    throw new Error('Total in Family must equal both age groups combined.');
+  }
   const values = [[
     savedRsvp.id,
     savedRsvp.familyName,

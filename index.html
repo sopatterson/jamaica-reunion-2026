@@ -501,8 +501,17 @@
 
         .rsvp-table {
             width: 100%;
-            min-width: 820px;
+            min-width: 960px;
             border-collapse: collapse;
+        }
+
+        .rsvp-table tr.count-mismatch {
+            background: #fff7e3;
+        }
+
+        .rsvp-table tr.count-mismatch input[data-field="total"] {
+            border-color: #c23b2a;
+            outline: 3px solid rgba(194, 59, 42, 0.12);
         }
 
         .rsvp-table th,
@@ -971,7 +980,7 @@
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .rsvp-stat:nth-child(2) {
+            .rsvp-stat:nth-child(even) {
                 border-right: 0;
             }
 
@@ -1158,7 +1167,7 @@
                 <div class="rsvp-summary" aria-label="Attendance summary">
                     <div class="rsvp-stat"><strong id="comingFamilies">0</strong><span>Families Coming</span></div>
                     <div class="rsvp-stat"><strong id="comingPeople">0</strong><span>Total People</span></div>
-                    <div class="rsvp-stat"><strong id="comingChildren">0</strong><span>Age 13 & Below</span></div>
+                    <div class="rsvp-stat"><strong id="comingChildren">0</strong><span>Age 17 & Below</span></div>
                     <div class="rsvp-stat"><strong id="comingAdults">0</strong><span>Age 18 & Above</span></div>
                 </div>
                 <div class="rsvp-table-wrap">
@@ -1167,7 +1176,7 @@
                             <tr>
                                 <th scope="col">Family Name</th>
                                 <th scope="col">Total in Family</th>
-                                <th scope="col">Age 13 & Below</th>
+                                <th scope="col">Age 17 & Below</th>
                                 <th scope="col">Age 18 & Above</th>
                                 <th scope="col">Location</th>
                                 <th scope="col">Are You Coming?</th>
@@ -1596,13 +1605,20 @@
         const saveStatus = document.getElementById('saveStatus');
         let rsvps = loadRsvps();
         const saveTimers = new Map();
+        const saveChains = new Map();
 
         function loadRsvps() {
             try {
-                return JSON.parse(localStorage.getItem(rsvpStorageKey)) || [];
+                return (JSON.parse(localStorage.getItem(rsvpStorageKey)) || []).map(normalizeRsvpAges);
             } catch (error) {
                 return [];
             }
+        }
+
+        function normalizeRsvpAges(rsvp) {
+            const normalized = { ...rsvp, children: (Number(rsvp.children) || 0) + (Number(rsvp.teens) || 0) };
+            delete normalized.teens;
+            return normalized;
         }
 
         function makeRsvp() {
@@ -1620,16 +1636,19 @@
                 rsvps.push(makeRsvp());
             }
 
-            rsvpRows.innerHTML = rsvps.map((rsvp, index) => `
-                <tr data-index="${index}">
+            rsvpRows.innerHTML = rsvps.map((rsvp, index) => {
+                const mismatch = !countsMatch(rsvp);
+                return `
+                <tr data-index="${index}"${mismatch ? ' class="count-mismatch"' : ''}>
                     <td><input data-field="familyName" type="text" value="${escapeHtml(rsvp.familyName)}" aria-label="Family name" placeholder="e.g. Patterson Family"></td>
-                    <td><input data-field="total" type="number" value="${rsvp.total}" min="0" inputmode="numeric" aria-label="Total number in family"></td>
-                    <td><input data-field="children" type="number" value="${rsvp.children}" min="0" inputmode="numeric" aria-label="Number age 13 and below"></td>
+                    <td><input data-field="total" type="number" value="${rsvp.total}" min="0" inputmode="numeric" aria-label="Total number in family" aria-invalid="${mismatch}"></td>
+                    <td><input data-field="children" type="number" value="${rsvp.children}" min="0" inputmode="numeric" aria-label="Number age 17 and below"></td>
                     <td><input data-field="adults" type="number" value="${rsvp.adults}" min="0" inputmode="numeric" aria-label="Number age 18 and above"></td>
                     <td><select data-field="location" aria-label="Resort location"><option value="Selection"${rsvp.location === 'Selection' ? ' selected' : ''}>Selection</option><option value="Waves"${rsvp.location === 'Waves' ? ' selected' : ''}>Waves</option><option value="Offsite"${rsvp.location === 'Offsite' ? ' selected' : ''}>Offsite</option></select></td>
                     <td><select data-field="coming" aria-label="Are you coming"><option value="Yes"${rsvp.coming === 'Yes' ? ' selected' : ''}>Yes</option><option value="Unfortunately No"${rsvp.coming === 'Unfortunately No' ? ' selected' : ''}>Unfortunately No</option><option value="Will Know By 15 Sept"${rsvp.coming === 'Will Know By 15 Sept' ? ' selected' : ''}>Will Know By 15 Sept</option></select></td>
                     <td><button class="delete-rsvp" type="button" aria-label="Delete ${escapeHtml(rsvp.familyName || 'family')} row">×</button></td>
-                </tr>`).join('');
+                </tr>`;
+            }).join('');
 
             updateRsvpSummary();
         }
@@ -1660,7 +1679,7 @@
             saveStatus.textContent = 'Loading the shared RSVP spreadsheet...';
             try {
                 const result = await requestRsvp('list');
-                rsvps = Array.isArray(result.rsvps) ? result.rsvps : [];
+                rsvps = Array.isArray(result.rsvps) ? result.rsvps.map(normalizeRsvpAges) : [];
                 localStorage.setItem(rsvpStorageKey, JSON.stringify(rsvps));
                 renderRsvps();
                 saveStatus.textContent = 'Shared RSVP list is up to date. Changes save automatically for everyone.';
@@ -1672,13 +1691,26 @@
 
         function scheduleSharedSave(rsvp) {
             saveLocally('Saving to the shared spreadsheet...');
+            clearTimeout(saveTimers.get(rsvp));
+            saveTimers.delete(rsvp);
+            updateRowValidity(rsvp);
             if (!rsvp.familyName.trim()) return;
-            const timerKey = rsvp.id || rsvp;
-            clearTimeout(saveTimers.get(timerKey));
-            saveTimers.set(timerKey, setTimeout(() => saveSharedRsvp(rsvp, timerKey), 700));
+            if (!countsMatch(rsvp)) {
+                saveStatus.textContent = 'Not saved: Total in Family must equal Age 17 & Below + Age 18 & Above.';
+                return;
+            }
+            saveTimers.set(rsvp, setTimeout(() => {
+                saveTimers.delete(rsvp);
+                const previousSave = saveChains.get(rsvp) || Promise.resolve();
+                const currentSave = previousSave.then(() => saveSharedRsvp(rsvp));
+                saveChains.set(rsvp, currentSave);
+                currentSave.finally(() => {
+                    if (saveChains.get(rsvp) === currentSave) saveChains.delete(rsvp);
+                });
+            }, 700));
         }
 
-        async function saveSharedRsvp(rsvp, timerKey) {
+        async function saveSharedRsvp(rsvp) {
             try {
                 const result = await requestRsvp('upsert', { rsvp });
                 Object.assign(rsvp, result.rsvp);
@@ -1686,9 +1718,20 @@
                 saveStatus.textContent = 'Saved to the shared RSVP spreadsheet.';
             } catch (error) {
                 saveStatus.textContent = `Could not sync: ${error.message} Your changes are saved on this device.`;
-            } finally {
-                saveTimers.delete(timerKey);
             }
+        }
+
+        function countsMatch(rsvp) {
+            const totalByAge = (Number(rsvp.children) || 0) + (Number(rsvp.adults) || 0);
+            return (Number(rsvp.total) || 0) === totalByAge;
+        }
+
+        function updateRowValidity(rsvp) {
+            const row = rsvpRows.querySelector(`tr[data-index="${rsvps.indexOf(rsvp)}"]`);
+            if (!row) return;
+            const mismatch = !countsMatch(rsvp);
+            row.classList.toggle('count-mismatch', mismatch);
+            row.querySelector('[data-field="total"]').setAttribute('aria-invalid', String(mismatch));
         }
 
         function updateRsvpSummary() {
@@ -1721,11 +1764,19 @@
             if (!button) return;
             const index = Number(button.closest('tr').dataset.index);
             const [removed] = rsvps.splice(index, 1);
-            saveLocally(removed.id ? 'Removing family from the shared spreadsheet...' : 'Blank row removed.');
+            clearTimeout(saveTimers.get(removed));
+            saveTimers.delete(removed);
+            saveLocally('Removing family from the shared spreadsheet...');
             renderRsvps();
-            if (!removed.id) return;
+            const pendingSave = saveChains.get(removed);
+            if (pendingSave) await pendingSave;
+            if (!removed.id) {
+                saveStatus.textContent = 'Unsaved family row removed.';
+                return;
+            }
             try {
                 await requestRsvp('delete', { id: removed.id });
+                saveChains.delete(removed);
                 saveStatus.textContent = 'Family removed from the shared RSVP spreadsheet.';
             } catch (error) {
                 rsvps.splice(index, 0, removed);
@@ -1744,7 +1795,7 @@
         document.getElementById('refreshRsvp').addEventListener('click', loadSharedRsvps);
 
         document.getElementById('downloadRsvp').addEventListener('click', () => {
-            const headers = ['Family Name', 'Total Number in Family', 'Age 13 and Below', 'Age 18 and Above', 'Location', 'Are You Coming'];
+            const headers = ['Family Name', 'Total Number in Family', 'Age 17 and Below', 'Age 18 and Above', 'Location', 'Are You Coming'];
             const quote = value => `"${String(value).replace(/"/g, '""')}"`;
             const rows = rsvps.filter(rsvp => rsvp.familyName.trim()).map(rsvp => [rsvp.familyName, rsvp.total, rsvp.children, rsvp.adults, rsvp.location, rsvp.coming]);
             const csv = [headers, ...rows].map(row => row.map(quote).join(',')).join('\n');
