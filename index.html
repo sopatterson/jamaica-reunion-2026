@@ -1027,13 +1027,18 @@
 
         .carousel-track {
             display: flex;
-            gap: 1rem;
             animation: scrollLeft 30s linear infinite;
             width: max-content;
         }
 
         .carousel-track:hover {
             animation-play-state: paused;
+        }
+
+        .carousel-group {
+            display: flex;
+            gap: 1rem;
+            padding-right: 1rem;
         }
 
         .carousel-slide {
@@ -1066,7 +1071,7 @@
             }
 
             100% {
-                transform: translateX(calc(-50% - 0.5rem));
+                transform: translateX(-50%);
             }
         }
 
@@ -1601,7 +1606,7 @@
             { type: 'image', src: 'images/DDD338D0-8565-44B1-8315-0DBD6ED43E01.jpeg', position: 'center bottom' },
             { type: 'image', src: 'images/DRAC3929.JPG' },
             { type: 'image', src: 'images/DRAC4996.JPG' },
-            { type: 'image', src: 'images/IMG-20240405-WA0003.jpg' },
+            { type: 'image', src: 'images/IMG-20240405-WA0003.jpg', position: 'center bottom' },
             { type: 'image', src: 'images/IMG_0016.jpeg' },
             { type: 'video', src: 'images/IMG_0511.MOV' },
             { type: 'image', src: 'images/IMG_1230.jpeg' },
@@ -1615,7 +1620,7 @@
             { type: 'image', src: 'images/IMG_5637.jpeg' },
             { type: 'image', src: 'images/IMG_6489.JPEG' },
             { type: 'image', src: 'images/IMG_6980.JPG' },
-            { type: 'image', src: 'images/IMG_6981.jpeg' },
+            { type: 'image', src: 'images/IMG_6981.jpeg', position: 'center bottom' },
             { type: 'image', src: 'images/Untitled 30.jpg' },
             { type: 'image', src: 'images/andersons.jpg' },
             { type: 'image', src: 'images/nj-fam.JPG' }
@@ -1647,7 +1652,7 @@
                 const image = document.createElement('img');
                 image.src = media.src;
                 image.alt = isDuplicate ? '' : 'Family reunion photo';
-                image.loading = 'lazy';
+                image.loading = 'eager';
                 image.decoding = 'async';
                 if (media.position) image.style.objectPosition = media.position;
                 slide.appendChild(image);
@@ -1659,8 +1664,14 @@
         function initializeCarousel() {
             const track = document.querySelector('.carousel-track');
             const randomizedMedia = shuffleMedia([...carouselMedia]);
-            [...randomizedMedia, ...randomizedMedia].forEach((media, index) => {
-                track.appendChild(createCarouselSlide(media, index >= randomizedMedia.length));
+            [false, true].forEach(isDuplicate => {
+                const group = document.createElement('div');
+                group.className = 'carousel-group';
+                if (isDuplicate) group.setAttribute('aria-hidden', 'true');
+                randomizedMedia.forEach(media => {
+                    group.appendChild(createCarouselSlide(media, isDuplicate));
+                });
+                track.appendChild(group);
             });
             track.style.animationDuration = `${Math.max(30, randomizedMedia.length * 6)}s`;
 
