@@ -28,6 +28,18 @@
             box-sizing: border-box;
         }
 
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
         body {
             font-family: 'Raleway', sans-serif;
             background: var(--cream);
@@ -439,6 +451,195 @@
             margin-right: 10px;
         }
 
+        /* RSVP Tracker */
+        .rsvp-tracker {
+            margin-top: 2.5rem;
+            overflow: hidden;
+            background: white;
+            border: 2px solid #dbe8df;
+            border-radius: 8px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .rsvp-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            background: var(--palm-green);
+            color: white;
+        }
+
+        .rsvp-stat {
+            padding: 1.25rem 0.75rem;
+            text-align: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .rsvp-stat:last-child {
+            border-right: 0;
+        }
+
+        .rsvp-stat strong {
+            display: block;
+            color: var(--jamaica-yellow);
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            line-height: 1;
+        }
+
+        .rsvp-stat span {
+            display: block;
+            margin-top: 0.45rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .rsvp-table-wrap {
+            overflow-x: auto;
+        }
+
+        .rsvp-table {
+            width: 100%;
+            min-width: 820px;
+            border-collapse: collapse;
+        }
+
+        .rsvp-table th,
+        .rsvp-table td {
+            padding: 0.85rem;
+            border-bottom: 1px solid #e5ece7;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .rsvp-table th {
+            color: var(--palm-green);
+            background: #f2f7f3;
+            font-size: 0.78rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .rsvp-table input,
+        .rsvp-table select {
+            width: 100%;
+            min-height: 42px;
+            padding: 0.55rem 0.65rem;
+            color: #24352d;
+            background: white;
+            border: 1px solid #b9cabf;
+            border-radius: 4px;
+            font: inherit;
+        }
+
+        .rsvp-table input:focus,
+        .rsvp-table select:focus {
+            border-color: var(--tropical-teal);
+            outline: 3px solid rgba(0, 168, 150, 0.16);
+        }
+
+        .rsvp-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: #f8faf8;
+        }
+
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 0.7rem 1rem;
+            color: white;
+            background: var(--palm-green);
+            border: 0;
+            border-radius: 4px;
+            font: inherit;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .action-button:hover {
+            background: var(--ocean-deep);
+        }
+
+        .action-button.secondary {
+            color: var(--palm-green);
+            background: white;
+            border: 2px solid var(--palm-green);
+        }
+
+        .delete-rsvp {
+            width: 42px;
+            height: 42px;
+            color: #8b251b;
+            background: #fff1ef;
+            border: 1px solid #efb5ae;
+            border-radius: 4px;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .tracker-note {
+            padding: 0 1rem 1rem;
+            color: #69766f;
+            background: #f8faf8;
+            font-size: 0.85rem;
+        }
+
+        /* Flyer Download */
+        .flyer-section {
+            padding: 5rem 2rem;
+            background: #eef6f1;
+            border-top: 8px solid var(--jamaica-yellow);
+        }
+
+        .flyer-layout {
+            display: grid;
+            grid-template-columns: minmax(280px, 520px) minmax(280px, 470px);
+            align-items: center;
+            justify-content: center;
+            gap: 4rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .flyer-preview {
+            display: block;
+            width: 100%;
+            height: auto;
+            border: 8px solid white;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .flyer-copy h2 {
+            margin-bottom: 2rem;
+        }
+
+        .flyer-copy p {
+            margin-bottom: 1.5rem;
+            color: #46584e;
+            font-size: 1.15rem;
+        }
+
+        .flyer-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .share-status {
+            min-height: 1.5rem;
+            margin-top: 1rem;
+            color: var(--palm-green);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
         /* Action Steps */
         .action-steps {
             background: linear-gradient(135deg, var(--palm-green), var(--ocean-deep));
@@ -765,6 +966,32 @@
             .contact-card {
                 padding: 2rem 1.5rem;
             }
+
+            .rsvp-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .rsvp-stat:nth-child(2) {
+                border-right: 0;
+            }
+
+            .rsvp-stat:nth-child(-n+2) {
+                border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .flyer-section {
+                padding: 3rem 1rem;
+            }
+
+            .flyer-layout {
+                grid-template-columns: 1fr;
+                gap: 2.5rem;
+            }
+
+            .flyer-preview {
+                max-width: 480px;
+                margin: 0 auto;
+            }
         }
 
         @media (max-width: 480px) {
@@ -922,33 +1149,43 @@
         <div class="wave-divider"></div>
 
         <!-- RSVP & Flight Tracking -->
-        <section class="fade-in">
+        <section class="fade-in" id="rsvp">
             <h2>RSVP & Share Your Travel Info</h2>
-            <p style="font-size: 1.2rem; margin-bottom: 3rem; color: #555; text-align: center;">Help us coordinate
-                arrivals and departures!</p>
+            <p style="font-size: 1.2rem; margin-bottom: 2rem; color: #555; text-align: center;">Add or update your
+                household below so the family can plan rooms, transportation, and activities.</p>
+
+            <div class="rsvp-tracker">
+                <div class="rsvp-summary" aria-label="Attendance summary">
+                    <div class="rsvp-stat"><strong id="comingFamilies">0</strong><span>Families Coming</span></div>
+                    <div class="rsvp-stat"><strong id="comingPeople">0</strong><span>Total People</span></div>
+                    <div class="rsvp-stat"><strong id="comingChildren">0</strong><span>Age 13 & Below</span></div>
+                    <div class="rsvp-stat"><strong id="comingAdults">0</strong><span>Age 18 & Above</span></div>
+                </div>
+                <div class="rsvp-table-wrap">
+                    <table class="rsvp-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Family Name</th>
+                                <th scope="col">Total in Family</th>
+                                <th scope="col">Age 13 & Below</th>
+                                <th scope="col">Age 18 & Above</th>
+                                <th scope="col">Location</th>
+                                <th scope="col">Are You Coming?</th>
+                                <th scope="col"><span class="sr-only">Delete</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="rsvpRows"></tbody>
+                    </table>
+                </div>
+                <div class="rsvp-actions">
+                    <button class="action-button" id="addRsvp" type="button">+ Add Family</button>
+                    <button class="action-button secondary" id="refreshRsvp" type="button">Refresh Shared List</button>
+                    <button class="action-button secondary" id="downloadRsvp" type="button">Download Spreadsheet</button>
+                </div>
+                <p class="tracker-note" id="saveStatus" aria-live="polite">Connecting to the shared RSVP spreadsheet...</p>
+            </div>
 
             <div class="info-grid">
-                <div class="info-card" style="border-left-color: var(--jamaica-green);">
-                    <h3>📝 RSVP & Room Selection Form</h3>
-                    <p>Let us know you're coming and which resort property you prefer!</p>
-                    <p style="margin-top: 1rem; font-weight: 600;">This form collects:</p>
-                    <ul style="margin-top: 0.5rem;">
-                        <li>✓ Family member names and ages</li>
-                        <li>✓ Which property (Joia, Selection, or Waves)</li>
-                        <li>✓ Number of rooms needed</li>
-                        <li>✓ Payment preference</li>
-                        <li>✓ Dietary restrictions or special requests</li>
-                    </ul>
-                    <p style="margin-top: 1.5rem; text-align: center;">
-                        <strong>📧 Email your selections to:<br>
-                            <span style="color: var(--tropical-teal); font-size: 1.2rem;"><a
-                                    href="mailto:revandrea124@gmail.com"
-                                    style="color: var(--tropical-teal);">revandrea124@gmail.com</a></span></strong>
-                    </p>
-                    <p style="margin-top: 1rem; font-style: italic; color: #888; text-align: center;">(Google Form link
-                        coming soon for easier tracking!)</p>
-                </div>
-
                 <div class="info-card" style="border-left-color: var(--ocean-deep);">
                     <h3>✈️ Flight Information Tracker</h3>
                     <p>Share your flight details so we can coordinate arrivals!</p>
@@ -1317,6 +1554,26 @@
 
     </div>
 
+    <section class="flyer-section" id="flyer">
+        <div class="flyer-layout">
+            <a href="images/Jamaica Reunion Flyer 4.jpg" download="Jamaica-Family-Reunion-2026-Flyer.jpg">
+                <img class="flyer-preview" src="images/Jamaica Reunion Flyer 4.jpg"
+                    alt="Jamaica Family Reunion 2026 flyer featuring the Anderson grandparents and event details">
+            </a>
+            <div class="flyer-copy">
+                <h2>Share the Reunion Flyer</h2>
+                <p>Help every branch of the family stay connected. Download the flyer and send it to relatives by text,
+                    WhatsApp, email, or social media.</p>
+                <div class="flyer-buttons">
+                    <a class="action-button" href="images/Jamaica Reunion Flyer 4.jpg"
+                        download="Jamaica-Family-Reunion-2026-Flyer.jpg">Download Flyer</a>
+                    <button class="action-button secondary" id="shareFlyer" type="button">Share Flyer</button>
+                </div>
+                <p class="share-status" id="shareStatus" aria-live="polite"></p>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer>
         <p class="footer-logo">🇯🇲 Jamaica Family Reunion 2026 🇯🇲</p>
@@ -1332,8 +1589,196 @@
         </div>
     </footer>
 
-    <!-- Smooth Scroll Script -->
-    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
     <script>
-        // Smooth scroll for scroll indicator
-        document.querySelector('.scroll-down').addEven
+        const rsvpEndpoint = 'https://script.google.com/macros/s/AKfycbyP_WliVMHQDVhYX1HX7oHkEYcRZcQKt3pfebS6VG9-x7dibMN4OVw1cfw6XLqSRPeA/exec';
+        const rsvpStorageKey = 'jamaica-reunion-2026-rsvps';
+        const rsvpRows = document.getElementById('rsvpRows');
+        const saveStatus = document.getElementById('saveStatus');
+        let rsvps = loadRsvps();
+        const saveTimers = new Map();
+
+        function loadRsvps() {
+            try {
+                return JSON.parse(localStorage.getItem(rsvpStorageKey)) || [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function makeRsvp() {
+            return { id: '', familyName: '', total: 0, children: 0, adults: 0, location: 'Selection', coming: 'Yes' };
+        }
+
+        function escapeHtml(value) {
+            const element = document.createElement('div');
+            element.textContent = value;
+            return element.innerHTML;
+        }
+
+        function renderRsvps() {
+            if (rsvps.length === 0) {
+                rsvps.push(makeRsvp());
+            }
+
+            rsvpRows.innerHTML = rsvps.map((rsvp, index) => `
+                <tr data-index="${index}">
+                    <td><input data-field="familyName" type="text" value="${escapeHtml(rsvp.familyName)}" aria-label="Family name" placeholder="e.g. Patterson Family"></td>
+                    <td><input data-field="total" type="number" value="${rsvp.total}" min="0" inputmode="numeric" aria-label="Total number in family"></td>
+                    <td><input data-field="children" type="number" value="${rsvp.children}" min="0" inputmode="numeric" aria-label="Number age 13 and below"></td>
+                    <td><input data-field="adults" type="number" value="${rsvp.adults}" min="0" inputmode="numeric" aria-label="Number age 18 and above"></td>
+                    <td><select data-field="location" aria-label="Resort location"><option value="Selection"${rsvp.location === 'Selection' ? ' selected' : ''}>Selection</option><option value="Waves"${rsvp.location === 'Waves' ? ' selected' : ''}>Waves</option><option value="Offsite"${rsvp.location === 'Offsite' ? ' selected' : ''}>Offsite</option></select></td>
+                    <td><select data-field="coming" aria-label="Are you coming"><option value="Yes"${rsvp.coming === 'Yes' ? ' selected' : ''}>Yes</option><option value="Unfortunately No"${rsvp.coming === 'Unfortunately No' ? ' selected' : ''}>Unfortunately No</option><option value="Will Know By 15 Sept"${rsvp.coming === 'Will Know By 15 Sept' ? ' selected' : ''}>Will Know By 15 Sept</option></select></td>
+                    <td><button class="delete-rsvp" type="button" aria-label="Delete ${escapeHtml(rsvp.familyName || 'family')} row">×</button></td>
+                </tr>`).join('');
+
+            updateRsvpSummary();
+        }
+
+        function saveLocally(message = 'Saved locally while the shared spreadsheet is unavailable.') {
+            localStorage.setItem(rsvpStorageKey, JSON.stringify(rsvps));
+            saveStatus.textContent = message;
+            updateRsvpSummary();
+        }
+
+        async function requestRsvp(action, data = {}) {
+            const options = action === 'list'
+                ? {}
+                : {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action, ...data })
+                };
+            const url = action === 'list' ? `${rsvpEndpoint}?action=list` : rsvpEndpoint;
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error(`Spreadsheet request failed (${response.status}).`);
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error || 'The spreadsheet returned an error.');
+            return result;
+        }
+
+        async function loadSharedRsvps() {
+            saveStatus.textContent = 'Loading the shared RSVP spreadsheet...';
+            try {
+                const result = await requestRsvp('list');
+                rsvps = Array.isArray(result.rsvps) ? result.rsvps : [];
+                localStorage.setItem(rsvpStorageKey, JSON.stringify(rsvps));
+                renderRsvps();
+                saveStatus.textContent = 'Shared RSVP list is up to date. Changes save automatically for everyone.';
+            } catch (error) {
+                renderRsvps();
+                saveStatus.textContent = `Shared spreadsheet unavailable: ${error.message} Your changes will remain on this device.`;
+            }
+        }
+
+        function scheduleSharedSave(rsvp) {
+            saveLocally('Saving to the shared spreadsheet...');
+            if (!rsvp.familyName.trim()) return;
+            const timerKey = rsvp.id || rsvp;
+            clearTimeout(saveTimers.get(timerKey));
+            saveTimers.set(timerKey, setTimeout(() => saveSharedRsvp(rsvp, timerKey), 700));
+        }
+
+        async function saveSharedRsvp(rsvp, timerKey) {
+            try {
+                const result = await requestRsvp('upsert', { rsvp });
+                Object.assign(rsvp, result.rsvp);
+                localStorage.setItem(rsvpStorageKey, JSON.stringify(rsvps));
+                saveStatus.textContent = 'Saved to the shared RSVP spreadsheet.';
+            } catch (error) {
+                saveStatus.textContent = `Could not sync: ${error.message} Your changes are saved on this device.`;
+            } finally {
+                saveTimers.delete(timerKey);
+            }
+        }
+
+        function updateRsvpSummary() {
+            const coming = rsvps.filter(rsvp => rsvp.coming === 'Yes' && rsvp.familyName.trim());
+            const sum = field => coming.reduce((total, rsvp) => total + (Number(rsvp[field]) || 0), 0);
+            document.getElementById('comingFamilies').textContent = coming.length;
+            document.getElementById('comingPeople').textContent = sum('total');
+            document.getElementById('comingChildren').textContent = sum('children');
+            document.getElementById('comingAdults').textContent = sum('adults');
+        }
+
+        rsvpRows.addEventListener('input', event => {
+            const field = event.target.dataset.field;
+            if (!field) return;
+            const index = Number(event.target.closest('tr').dataset.index);
+            rsvps[index][field] = event.target.type === 'number' ? Math.max(0, Number(event.target.value) || 0) : event.target.value;
+            scheduleSharedSave(rsvps[index]);
+        });
+
+        rsvpRows.addEventListener('change', event => {
+            if (event.target.dataset.field === 'coming' || event.target.dataset.field === 'location') {
+                const index = Number(event.target.closest('tr').dataset.index);
+                rsvps[index][event.target.dataset.field] = event.target.value;
+                scheduleSharedSave(rsvps[index]);
+            }
+        });
+
+        rsvpRows.addEventListener('click', async event => {
+            const button = event.target.closest('.delete-rsvp');
+            if (!button) return;
+            const index = Number(button.closest('tr').dataset.index);
+            const [removed] = rsvps.splice(index, 1);
+            saveLocally(removed.id ? 'Removing family from the shared spreadsheet...' : 'Blank row removed.');
+            renderRsvps();
+            if (!removed.id) return;
+            try {
+                await requestRsvp('delete', { id: removed.id });
+                saveStatus.textContent = 'Family removed from the shared RSVP spreadsheet.';
+            } catch (error) {
+                rsvps.splice(index, 0, removed);
+                saveLocally(`Could not delete: ${error.message}`);
+                renderRsvps();
+            }
+        });
+
+        document.getElementById('addRsvp').addEventListener('click', () => {
+            rsvps.push(makeRsvp());
+            saveLocally('New row added. Enter a family name to save it to the shared spreadsheet.');
+            renderRsvps();
+            rsvpRows.querySelector('tr:last-child input').focus();
+        });
+
+        document.getElementById('refreshRsvp').addEventListener('click', loadSharedRsvps);
+
+        document.getElementById('downloadRsvp').addEventListener('click', () => {
+            const headers = ['Family Name', 'Total Number in Family', 'Age 13 and Below', 'Age 18 and Above', 'Location', 'Are You Coming'];
+            const quote = value => `"${String(value).replace(/"/g, '""')}"`;
+            const rows = rsvps.filter(rsvp => rsvp.familyName.trim()).map(rsvp => [rsvp.familyName, rsvp.total, rsvp.children, rsvp.adults, rsvp.location, rsvp.coming]);
+            const csv = [headers, ...rows].map(row => row.map(quote).join(',')).join('\n');
+            const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'jamaica-reunion-2026-rsvp.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('shareFlyer').addEventListener('click', async () => {
+            const status = document.getElementById('shareStatus');
+            const flyerUrl = new URL('images/Jamaica Reunion Flyer 4.jpg', window.location.href).href;
+            try {
+                const response = await fetch(flyerUrl);
+                const flyerFile = new File([await response.blob()], 'Jamaica-Family-Reunion-2026-Flyer.jpg', { type: 'image/jpeg' });
+                if (navigator.share && navigator.canShare?.({ files: [flyerFile] })) {
+                    await navigator.share({ title: 'Jamaica Family Reunion 2026', text: 'Save the dates and share with the family!', files: [flyerFile] });
+                    status.textContent = 'Flyer shared.';
+                } else if (navigator.share) {
+                    await navigator.share({ title: 'Jamaica Family Reunion 2026', text: 'Save the dates and share with the family!', url: flyerUrl });
+                    status.textContent = 'Flyer shared.';
+                } else {
+                    await navigator.clipboard.writeText(flyerUrl);
+                    status.textContent = 'Flyer link copied. Paste it into a text or WhatsApp message.';
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError') status.textContent = 'Use Download Flyer, then attach the image to your message.';
+            }
+        });
+
+        renderRsvps();
+        loadSharedRsvps();
+    </script>
+</body>
+</html>
