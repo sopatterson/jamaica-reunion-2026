@@ -582,7 +582,8 @@
             border: 2px solid var(--palm-green);
         }
 
-        .delete-rsvp {
+        .delete-rsvp,
+        .delete-flight {
             width: 42px;
             height: 42px;
             color: #8b251b;
@@ -598,6 +599,30 @@
             color: #69766f;
             background: #f8faf8;
             font-size: 0.85rem;
+        }
+
+        .flight-tracker {
+            margin-top: 2.5rem;
+        }
+
+        .flight-tracker-header {
+            padding: 1.5rem;
+            color: white;
+            background: var(--ocean-deep);
+        }
+
+        .flight-tracker-header h3 {
+            margin-bottom: 0.35rem;
+            color: var(--jamaica-yellow);
+        }
+
+        .flight-tracker-header p {
+            margin: 0;
+            color: white;
+        }
+
+        .flight-table {
+            min-width: 720px;
         }
 
         /* Flyer Download */
@@ -1189,32 +1214,30 @@
                 <p class="tracker-note" id="saveStatus" aria-live="polite">Connecting to the shared RSVP spreadsheet...</p>
             </div>
 
-            <div class="info-grid">
-                <div class="info-card" style="border-left-color: var(--ocean-deep);">
-                    <h3>✈️ Flight Information Tracker</h3>
-                    <p>Share your flight details so we can coordinate arrivals!</p>
-                    <p style="margin-top: 1rem; font-weight: 600;">Please share:</p>
-                    <ul style="margin-top: 0.5rem;">
-                        <li>✓ Arrival airline & flight number</li>
-                        <li>✓ Arrival date & time</li>
-                        <li>✓ Departure airline & flight number</li>
-                        <li>✓ Departure date & time</li>
-                        <li>✓ Number of people in your party</li>
-                    </ul>
-                    <p
-                        style="margin-top: 1.5rem; background: var(--sand-light); padding: 1rem; border-radius: 10px; font-size: 0.95rem;">
-                        💡 <strong>Why we need this:</strong> So we can coordinate group airport shuttles, know who's
-                        arriving when, and plan the first dinner based on arrival times!
-                    </p>
-                    <p style="margin-top: 1rem; text-align: center;">
-                        <strong>📧 Email flight details to:<br>
-                            <span style="color: var(--tropical-teal); font-size: 1.2rem;"><a
-                                    href="mailto:revandrea124@gmail.com"
-                                    style="color: var(--tropical-teal);">revandrea124@gmail.com</a></span></strong>
-                    </p>
-                    <p style="margin-top: 1rem; font-style: italic; color: #888; text-align: center;">(Shared Google
-                        Sheet coming soon for everyone to see who's arriving when!)</p>
+            <div class="rsvp-tracker flight-tracker" id="flights">
+                <div class="flight-tracker-header">
+                    <h3>Flight Information Tracker</h3>
+                    <p>Add each traveling family and their arrival and departure times.</p>
                 </div>
+                <div class="rsvp-table-wrap">
+                    <table class="rsvp-table flight-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Family Name</th>
+                                <th scope="col">Arrival Day & Time</th>
+                                <th scope="col">Departure Day & Time</th>
+                                <th scope="col"><span class="sr-only">Delete</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="flightRows"></tbody>
+                    </table>
+                </div>
+                <div class="rsvp-actions">
+                    <button class="action-button" id="addFlightFamily" type="button">+ Add Family</button>
+                    <button class="action-button secondary" id="refreshFlights" type="button">Refresh Shared List</button>
+                    <button class="action-button secondary" id="downloadFlights" type="button">Download Flight List</button>
+                </div>
+                <p class="tracker-note" id="flightSaveStatus" aria-live="polite">Connecting to the shared flight spreadsheet...</p>
             </div>
 
         </section>
@@ -1692,11 +1715,17 @@
 
         const rsvpEndpoint = 'https://script.google.com/macros/s/AKfycbyP_WliVMHQDVhYX1HX7oHkEYcRZcQKt3pfebS6VG9-x7dibMN4OVw1cfw6XLqSRPeA/exec';
         const rsvpStorageKey = 'jamaica-reunion-2026-rsvps';
+        const flightStorageKey = 'jamaica-reunion-2026-flights';
         const rsvpRows = document.getElementById('rsvpRows');
+        const flightRows = document.getElementById('flightRows');
         const saveStatus = document.getElementById('saveStatus');
+        const flightSaveStatus = document.getElementById('flightSaveStatus');
         let rsvps = loadRsvps();
+        let flights = loadFlights();
         const saveTimers = new Map();
         const saveChains = new Map();
+        const flightSaveTimers = new Map();
+        const flightSaveChains = new Map();
 
         function loadRsvps() {
             try {
@@ -1714,6 +1743,18 @@
 
         function makeRsvp() {
             return { id: '', familyName: '', total: 0, children: 0, adults: 0, location: 'Selection', coming: 'Yes' };
+        }
+
+        function loadFlights() {
+            try {
+                return JSON.parse(localStorage.getItem(flightStorageKey)) || [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function makeFlight() {
+            return { id: '', familyName: '', arrivalDateTime: '', departureDateTime: '' };
         }
 
         function escapeHtml(value) {
@@ -1744,6 +1785,20 @@
             updateRsvpSummary();
         }
 
+        function renderFlightRows() {
+            if (flights.length === 0) {
+                flights.push(makeFlight());
+            }
+
+            flightRows.innerHTML = flights.map((flight, index) => `
+                <tr data-index="${index}">
+                    <td><input data-field="familyName" type="text" value="${escapeHtml(flight.familyName)}" aria-label="Flight family name" placeholder="e.g. Patterson Family"></td>
+                    <td><input data-field="arrivalDateTime" type="datetime-local" value="${escapeHtml(flight.arrivalDateTime || '')}" aria-label="Arrival day and time for ${escapeHtml(flight.familyName || 'family')}"></td>
+                    <td><input data-field="departureDateTime" type="datetime-local" value="${escapeHtml(flight.departureDateTime || '')}" aria-label="Departure day and time for ${escapeHtml(flight.familyName || 'family')}"></td>
+                    <td><button class="delete-flight" type="button" aria-label="Delete ${escapeHtml(flight.familyName || 'family')} flight row">×</button></td>
+                </tr>`).join('');
+        }
+
         function saveLocally(message = 'Saved locally while the shared spreadsheet is unavailable.') {
             localStorage.setItem(rsvpStorageKey, JSON.stringify(rsvps));
             saveStatus.textContent = message;
@@ -1751,14 +1806,15 @@
         }
 
         async function requestRsvp(action, data = {}) {
-            const options = action === 'list'
+            const isGetRequest = action === 'list' || action === 'listFlights';
+            const options = isGetRequest
                 ? {}
                 : {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action, ...data })
                 };
-            const url = action === 'list' ? `${rsvpEndpoint}?action=list` : rsvpEndpoint;
+            const url = isGetRequest ? `${rsvpEndpoint}?action=${action}` : rsvpEndpoint;
             const response = await fetch(url, options);
             if (!response.ok) throw new Error(`Spreadsheet request failed (${response.status}).`);
             const result = await response.json();
@@ -1777,6 +1833,20 @@
             } catch (error) {
                 renderRsvps();
                 saveStatus.textContent = `Shared spreadsheet unavailable: ${error.message} Your changes will remain on this device.`;
+            }
+        }
+
+        async function loadSharedFlights() {
+            flightSaveStatus.textContent = 'Loading the shared flight spreadsheet...';
+            try {
+                const result = await requestRsvp('listFlights');
+                flights = Array.isArray(result.flights) ? result.flights : [];
+                localStorage.setItem(flightStorageKey, JSON.stringify(flights));
+                renderFlightRows();
+                flightSaveStatus.textContent = 'Shared flight list is up to date. Changes save automatically for everyone.';
+            } catch (error) {
+                renderFlightRows();
+                flightSaveStatus.textContent = `Shared flight spreadsheet unavailable: ${error.message} Your changes will remain on this device.`;
             }
         }
 
@@ -1812,6 +1882,38 @@
             }
         }
 
+        function saveFlightsLocally(message = 'Saved locally while the shared flight spreadsheet is unavailable.') {
+            localStorage.setItem(flightStorageKey, JSON.stringify(flights));
+            flightSaveStatus.textContent = message;
+        }
+
+        function scheduleFlightSave(flight) {
+            saveFlightsLocally('Saving to the shared flight spreadsheet...');
+            clearTimeout(flightSaveTimers.get(flight));
+            flightSaveTimers.delete(flight);
+            if (!flight.familyName.trim()) return;
+            flightSaveTimers.set(flight, setTimeout(() => {
+                flightSaveTimers.delete(flight);
+                const previousSave = flightSaveChains.get(flight) || Promise.resolve();
+                const currentSave = previousSave.then(() => saveSharedFlight(flight));
+                flightSaveChains.set(flight, currentSave);
+                currentSave.finally(() => {
+                    if (flightSaveChains.get(flight) === currentSave) flightSaveChains.delete(flight);
+                });
+            }, 700));
+        }
+
+        async function saveSharedFlight(flight) {
+            try {
+                const result = await requestRsvp('upsertFlight', { flight });
+                Object.assign(flight, result.flight);
+                localStorage.setItem(flightStorageKey, JSON.stringify(flights));
+                flightSaveStatus.textContent = 'Saved to the shared flight spreadsheet.';
+            } catch (error) {
+                flightSaveStatus.textContent = `Could not sync: ${error.message} Your changes are saved on this device.`;
+            }
+        }
+
         function countsMatch(rsvp) {
             const totalByAge = (Number(rsvp.children) || 0) + (Number(rsvp.adults) || 0);
             return (Number(rsvp.total) || 0) === totalByAge;
@@ -1840,6 +1942,40 @@
             const index = Number(event.target.closest('tr').dataset.index);
             rsvps[index][field] = event.target.type === 'number' ? Math.max(0, Number(event.target.value) || 0) : event.target.value;
             scheduleSharedSave(rsvps[index]);
+        });
+
+        flightRows.addEventListener('input', event => {
+            const field = event.target.dataset.field;
+            if (!field) return;
+            const index = Number(event.target.closest('tr').dataset.index);
+            flights[index][field] = event.target.value;
+            scheduleFlightSave(flights[index]);
+        });
+
+        flightRows.addEventListener('click', async event => {
+            const button = event.target.closest('.delete-flight');
+            if (!button) return;
+            const index = Number(button.closest('tr').dataset.index);
+            const [removed] = flights.splice(index, 1);
+            clearTimeout(flightSaveTimers.get(removed));
+            flightSaveTimers.delete(removed);
+            saveFlightsLocally('Removing family from the shared flight spreadsheet...');
+            renderFlightRows();
+            const pendingSave = flightSaveChains.get(removed);
+            if (pendingSave) await pendingSave;
+            if (!removed.id) {
+                flightSaveStatus.textContent = 'Unsaved flight row removed.';
+                return;
+            }
+            try {
+                await requestRsvp('deleteFlight', { id: removed.id });
+                flightSaveChains.delete(removed);
+                flightSaveStatus.textContent = 'Flight entry moved to the recovery archive.';
+            } catch (error) {
+                flights.splice(index, 0, removed);
+                saveFlightsLocally(`Could not delete: ${error.message}`);
+                renderFlightRows();
+            }
         });
 
         rsvpRows.addEventListener('change', event => {
@@ -1885,7 +2021,15 @@
             rsvpRows.querySelector('tr:last-child input').focus();
         });
 
+        document.getElementById('addFlightFamily').addEventListener('click', () => {
+            flights.push(makeFlight());
+            saveFlightsLocally('New row added. Enter a family name to save it to the shared flight spreadsheet.');
+            renderFlightRows();
+            flightRows.querySelector('tr:last-child input').focus();
+        });
+
         document.getElementById('refreshRsvp').addEventListener('click', loadSharedRsvps);
+        document.getElementById('refreshFlights').addEventListener('click', loadSharedFlights);
 
         document.getElementById('downloadRsvp').addEventListener('click', () => {
             const headers = ['Family Name', 'Total Number in Family', 'Age 17 and Below', 'Age 18 and Above', 'Location', 'Are You Coming'];
@@ -1896,6 +2040,19 @@
             const link = document.createElement('a');
             link.href = url;
             link.download = 'jamaica-reunion-2026-rsvp.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('downloadFlights').addEventListener('click', () => {
+            const headers = ['Family Name', 'Arrival Day & Time', 'Departure Day & Time'];
+            const quote = value => `"${String(value).replace(/"/g, '""')}"`;
+            const rows = flights.filter(flight => flight.familyName.trim()).map(flight => [flight.familyName, flight.arrivalDateTime || '', flight.departureDateTime || '']);
+            const csv = [headers, ...rows].map(row => row.map(quote).join(',')).join('\n');
+            const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'jamaica-reunion-2026-flights.csv';
             link.click();
             URL.revokeObjectURL(url);
         });
@@ -1922,7 +2079,9 @@
         });
 
         renderRsvps();
+        renderFlightRows();
         loadSharedRsvps();
+        loadSharedFlights();
     </script>
 </body>
 </html>

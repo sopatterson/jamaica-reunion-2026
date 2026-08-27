@@ -1,6 +1,8 @@
 const SPREADSHEET_ID = '1CnTfSMjKRbHTd1RVeWkvCULY-ds1HmdrC3HMQetoMuk';
 const SHEET_NAME = 'RSVP';
 const ARCHIVE_SHEET_NAME = 'RSVP Archive';
+const FLIGHT_SHEET_NAME = 'Flights';
+const FLIGHT_ARCHIVE_SHEET_NAME = 'Flight Archive';
 
 const HEADERS = [
   'ID',
@@ -12,6 +14,8 @@ const HEADERS = [
   'Location'
 ];
 const ARCHIVE_HEADERS = [...HEADERS, 'Archived At'];
+const FLIGHT_HEADERS = ['ID', 'Family Name', 'Arrival Day & Time', 'Departure Day & Time'];
+const FLIGHT_ARCHIVE_HEADERS = [...FLIGHT_HEADERS, 'Archived At'];
 
 const ATTENDANCE_OPTIONS = [
   'Yes',
@@ -72,6 +76,7 @@ function setupRsvpSheet() {
   sheet.getRange(2, 7, dataRowCount, 1).setDataValidation(locationValidation);
   sheet.autoResizeColumns(1, HEADERS.length);
   getArchiveSheet(spreadsheet);
+  setupFlightSheets(spreadsheet);
 }
 
 function doGet(event) {
@@ -80,6 +85,10 @@ function doGet(event) {
 
     if (action === 'list') {
       return jsonResponse({ success: true, rsvps: getRsvps() });
+    }
+
+    if (action === 'listFlights') {
+      return jsonResponse({ success: true, flights: getFlights() });
     }
 
     if (action === 'health') {
@@ -111,6 +120,18 @@ function doPost(event) {
 
     if (request.action === 'delete') {
       deleteRsvp(request.id);
+      return jsonResponse({ success: true, id: request.id, archived: true });
+    }
+
+    if (request.action === 'upsertFlight') {
+      return jsonResponse({
+        success: true,
+        flight: upsertFlight(request.flight)
+      });
+    }
+
+    if (request.action === 'deleteFlight') {
+      deleteFlight(request.id);
       return jsonResponse({ success: true, id: request.id, archived: true });
     }
 
@@ -224,6 +245,111 @@ function getArchiveSheet(spreadsheet) {
   return archiveSheet;
 }
 
+function setupFlightSheets(spreadsheet) {
+  let flightSheet = spreadsheet.getSheetByName(FLIGHT_SHEET_NAME);
+  if (!flightSheet) {
+    flightSheet = spreadsheet.insertSheet(FLIGHT_SHEET_NAME);
+  }
+  formatFlightSheet(flightSheet, FLIGHT_HEADERS, '#028090');
+  flightSheet.getRange('C:D').setNumberFormat('@');
+
+  let archiveSheet = spreadsheet.getSheetByName(FLIGHT_ARCHIVE_SHEET_NAME);
+  if (!archiveSheet) {
+    archiveSheet = spreadsheet.insertSheet(FLIGHT_ARCHIVE_SHEET_NAME);
+  }
+  formatFlightSheet(archiveSheet, FLIGHT_ARCHIVE_HEADERS, '#5a1f1f');
+  archiveSheet.getRange('C:D').setNumberFormat('@');
+  archiveSheet.getRange('E:E').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+}
+
+function formatFlightSheet(sheet, headers, headerColor) {
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, headers.length)
+    .setBackground(headerColor)
+    .setFontColor('#ffffff')
+    .setFontWeight('bold');
+  sheet.autoResizeColumns(1, headers.length);
+}
+
+function getFlights() {
+  const sheet = getFlightSheet();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return [];
+  }
+
+  return sheet.getRange(2, 1, lastRow - 1, FLIGHT_HEADERS.length)
+    .getDisplayValues()
+    .filter(row => row[0])
+    .map(row => ({
+      id: row[0],
+      familyName: row[1],
+      arrivalDateTime: normalizeDateTime(row[2]),
+      departureDateTime: normalizeDateTime(row[3])
+    }));
+}
+
+function upsertFlight(flight) {
+  if (!flight || typeof flight !== 'object') {
+    throw new Error('Flight data is required.');
+  }
+
+  const familyName = sanitizeText(flight.familyName).trim();
+  if (!familyName) {
+    throw new Error('Family name is required.');
+  }
+
+  const sheet = getFlightSheet();
+  const savedFlight = {
+    id: sanitizeText(flight.id).trim() || Utilities.getUuid(),
+    familyName,
+    arrivalDateTime: normalizeDateTime(flight.arrivalDateTime),
+    departureDateTime: normalizeDateTime(flight.departureDateTime)
+  };
+  const values = [[
+    savedFlight.id,
+    savedFlight.familyName,
+    savedFlight.arrivalDateTime,
+    savedFlight.departureDateTime
+  ]];
+  const existingRow = findRowById(sheet, savedFlight.id);
+
+  if (existingRow) {
+    sheet.getRange(existingRow, 1, 1, FLIGHT_HEADERS.length).setValues(values);
+  } else {
+    sheet.appendRow(values[0]);
+  }
+  return savedFlight;
+}
+
+function deleteFlight(id) {
+  const cleanId = sanitizeText(id).trim();
+  if (!cleanId) {
+    throw new Error('Flight ID is required.');
+  }
+
+  const sheet = getFlightSheet();
+  const rowNumber = findRowById(sheet, cleanId);
+  if (!rowNumber) {
+    throw new Error('Flight entry was not found.');
+  }
+
+  const spreadsheet = sheet.getParent();
+  const rowValues = sheet.getRange(rowNumber, 1, 1, FLIGHT_HEADERS.length).getValues()[0];
+  spreadsheet.getSheetByName(FLIGHT_ARCHIVE_SHEET_NAME).appendRow([...rowValues, new Date()]);
+  sheet.deleteRow(rowNumber);
+}
+
+function getFlightSheet() {
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = spreadsheet.getSheetByName(FLIGHT_SHEET_NAME);
+  if (!sheet) {
+    throw new Error('The "' + FLIGHT_SHEET_NAME + '" tab does not exist. Run setupRsvpSheet first.');
+  }
+  return sheet;
+}
+
 function findRowById(sheet, id) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) {
@@ -258,6 +384,11 @@ function parseRequest(event) {
 function normalizeOption(value, options, fallback) {
   const option = String(value || '');
   return options.includes(option) ? option : fallback;
+}
+
+function normalizeDateTime(value) {
+  const dateTime = String(value || '').trim();
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateTime) ? dateTime : '';
 }
 
 function toNonNegativeInteger(value) {
