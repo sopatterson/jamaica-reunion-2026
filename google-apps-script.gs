@@ -14,7 +14,20 @@ const HEADERS = [
   'Location'
 ];
 const ARCHIVE_HEADERS = [...HEADERS, 'Archived At'];
-const FLIGHT_HEADERS = ['ID', 'Family Name', 'Arrival Day & Time', 'Departure Day & Time'];
+const LEGACY_FLIGHT_HEADERS = ['ID', 'Family Name', 'Arrival Day & Time', 'Departure Day & Time'];
+const FLIGHT_HEADERS = [
+  'ID',
+  'RSVP ID',
+  'Family Name',
+  'Direction',
+  'Day & Time',
+  'Airline',
+  'Flight Number',
+  'Airport',
+  'Travelers',
+  'Bus Needed',
+  'Location'
+];
 const FLIGHT_ARCHIVE_HEADERS = [...FLIGHT_HEADERS, 'Archived At'];
 
 const ATTENDANCE_OPTIONS = [
@@ -28,6 +41,9 @@ const LOCATION_OPTIONS = [
   'Waves',
   'Offsite'
 ];
+
+const FLIGHT_DIRECTION_OPTIONS = ['Arrival', 'Departure'];
+const BUS_NEEDED_OPTIONS = ['Yes', 'No'];
 
 function setupRsvpSheet() {
   const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -89,6 +105,10 @@ function doGet(event) {
 
     if (action === 'listFlights') {
       return jsonResponse({ success: true, flights: getFlights() });
+    }
+
+    if (action === 'listBusPlan') {
+      return jsonResponse({ success: true, busGroups: getBusPlan() });
     }
 
     if (action === 'health') {
@@ -190,6 +210,7 @@ function upsertRsvp(rsvp) {
   if (savedRsvp.total !== totalByAge) {
     throw new Error('Total in Family must equal both age groups combined.');
   }
+  validateLinkedFlightCounts(savedRsvp);
   const values = [[
     savedRsvp.id,
     savedRsvp.familyName,
@@ -206,8 +227,45 @@ function upsertRsvp(rsvp) {
   } else {
     sheet.appendRow(values[0]);
   }
+  syncLinkedFlightDetails(savedRsvp);
 
   return savedRsvp;
+}
+
+function validateLinkedFlightCounts(rsvp) {
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const flightSheet = spreadsheet.getSheetByName(FLIGHT_SHEET_NAME);
+  if (!flightSheet || flightSheet.getLastRow() < 2 || flightSheet.getLastColumn() < FLIGHT_HEADERS.length) {
+    return;
+  }
+
+  const linkedRows = flightSheet.getRange(2, 1, flightSheet.getLastRow() - 1, FLIGHT_HEADERS.length)
+    .getDisplayValues()
+    .filter(row => row[1] === rsvp.id);
+  const oversizedGroup = linkedRows.find(row => toNonNegativeInteger(row[8]) > rsvp.total);
+  if (oversizedGroup) {
+    throw new Error('Total in Family cannot be lower than the linked flight group of ' + oversizedGroup[8] + ' travelers.');
+  }
+}
+
+function syncLinkedFlightDetails(rsvp) {
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const flightSheet = spreadsheet.getSheetByName(FLIGHT_SHEET_NAME);
+  if (!flightSheet || flightSheet.getLastRow() < 2 || flightSheet.getLastColumn() < FLIGHT_HEADERS.length) {
+    return;
+  }
+
+  const values = flightSheet.getRange(2, 1, flightSheet.getLastRow() - 1, FLIGHT_HEADERS.length).getValues();
+  let changed = false;
+  values.forEach(row => {
+    if (String(row[1]) !== rsvp.id) return;
+    row[2] = rsvp.familyName;
+    row[10] = rsvp.location;
+    changed = true;
+  });
+  if (changed) {
+    flightSheet.getRange(2, 1, values.length, FLIGHT_HEADERS.length).setValues(values);
+  }
 }
 
 function deleteRsvp(id) {
@@ -225,7 +283,24 @@ function deleteRsvp(id) {
   const rowValues = sheet.getRange(rowNumber, 1, 1, HEADERS.length).getValues()[0];
   const archiveSheet = getArchiveSheet(sheet.getParent());
   archiveSheet.appendRow([...rowValues, new Date()]);
+  archiveFlightsForRsvp(cleanId);
   sheet.deleteRow(rowNumber);
+}
+
+function archiveFlightsForRsvp(rsvpId) {
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const flightSheet = spreadsheet.getSheetByName(FLIGHT_SHEET_NAME);
+  const archiveSheet = spreadsheet.getSheetByName(FLIGHT_ARCHIVE_SHEET_NAME);
+  if (!flightSheet || !archiveSheet || flightSheet.getLastRow() < 2) {
+    return;
+  }
+
+  for (let rowNumber = flightSheet.getLastRow(); rowNumber >= 2; rowNumber -= 1) {
+    const rowValues = flightSheet.getRange(rowNumber, 1, 1, FLIGHT_HEADERS.length).getValues()[0];
+    if (String(rowValues[1]) !== rsvpId) continue;
+    archiveSheet.appendRow([...rowValues, new Date()]);
+    flightSheet.deleteRow(rowNumber);
+  }
 }
 
 function getArchiveSheet(spreadsheet) {
@@ -250,16 +325,78 @@ function setupFlightSheets(spreadsheet) {
   if (!flightSheet) {
     flightSheet = spreadsheet.insertSheet(FLIGHT_SHEET_NAME);
   }
+  migrateLegacyFlightSheet(flightSheet, false);
   formatFlightSheet(flightSheet, FLIGHT_HEADERS, '#028090');
-  flightSheet.getRange('C:D').setNumberFormat('@');
+  flightSheet.getRange('E:E').setNumberFormat('@');
 
   let archiveSheet = spreadsheet.getSheetByName(FLIGHT_ARCHIVE_SHEET_NAME);
   if (!archiveSheet) {
     archiveSheet = spreadsheet.insertSheet(FLIGHT_ARCHIVE_SHEET_NAME);
   }
+  migrateLegacyFlightSheet(archiveSheet, true);
   formatFlightSheet(archiveSheet, FLIGHT_ARCHIVE_HEADERS, '#5a1f1f');
-  archiveSheet.getRange('C:D').setNumberFormat('@');
-  archiveSheet.getRange('E:E').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  archiveSheet.getRange('E:E').setNumberFormat('@');
+  archiveSheet.getRange('L:L').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+}
+
+function migrateLegacyFlightSheet(sheet, isArchive) {
+  const lastColumn = sheet.getLastColumn();
+  if (lastColumn < LEGACY_FLIGHT_HEADERS.length) {
+    return;
+  }
+
+  const existingHeaders = sheet.getRange(1, 1, 1, lastColumn).getDisplayValues()[0];
+  const isLegacy = LEGACY_FLIGHT_HEADERS.every((header, index) => existingHeaders[index] === header);
+  if (!isLegacy || existingHeaders[1] === 'RSVP ID') {
+    return;
+  }
+
+  const lastRow = sheet.getLastRow();
+  const legacyWidth = isArchive ? LEGACY_FLIGHT_HEADERS.length + 1 : LEGACY_FLIGHT_HEADERS.length;
+  const legacyRows = lastRow > 1
+    ? sheet.getRange(2, 1, lastRow - 1, legacyWidth).getValues()
+    : [];
+  const rsvpsByName = getRsvps().reduce((map, rsvp) => {
+    map[String(rsvp.familyName).trim().toLowerCase()] = rsvp;
+    return map;
+  }, {});
+  const timeZone = sheet.getParent().getSpreadsheetTimeZone();
+  const migratedRows = [];
+
+  legacyRows.forEach(row => {
+    if (!row[0]) return;
+    const rsvp = rsvpsByName[String(row[1]).trim().toLowerCase()] || null;
+    const commonValues = [
+      rsvp ? rsvp.id : '',
+      rsvp ? rsvp.familyName : sanitizeText(row[1]).trim(),
+      '',
+      '',
+      '',
+      '',
+      'MBJ',
+      rsvp ? rsvp.total : 0,
+      'Yes',
+      rsvp ? rsvp.location : ''
+    ];
+    const archivedAt = isArchive ? row[4] : null;
+    [
+      { direction: 'Arrival', dateTime: normalizeDateTime(row[2], timeZone), id: row[0] },
+      { direction: 'Departure', dateTime: normalizeDateTime(row[3], timeZone), id: Utilities.getUuid() }
+    ].forEach(group => {
+      if (!group.dateTime) return;
+      const values = [group.id, ...commonValues];
+      values[3] = group.direction;
+      values[4] = group.dateTime;
+      if (isArchive) values.push(archivedAt || new Date());
+      migratedRows.push(values);
+    });
+  });
+
+  sheet.clearContents();
+  if (migratedRows.length > 0) {
+    sheet.getRange(2, 1, migratedRows.length, isArchive ? FLIGHT_ARCHIVE_HEADERS.length : FLIGHT_HEADERS.length)
+      .setValues(migratedRows);
+  }
 }
 
 function formatFlightSheet(sheet, headers, headerColor) {
@@ -279,15 +416,53 @@ function getFlights() {
     return [];
   }
 
+  const timeZone = sheet.getParent().getSpreadsheetTimeZone();
   return sheet.getRange(2, 1, lastRow - 1, FLIGHT_HEADERS.length)
-    .getDisplayValues()
+    .getValues()
     .filter(row => row[0])
     .map(row => ({
       id: row[0],
-      familyName: row[1],
-      arrivalDateTime: normalizeDateTime(row[2]),
-      departureDateTime: normalizeDateTime(row[3])
+      rsvpId: row[1],
+      familyName: row[2],
+      direction: normalizeOption(row[3], FLIGHT_DIRECTION_OPTIONS, 'Arrival'),
+      dateTime: normalizeDateTime(row[4], timeZone),
+      airline: row[5],
+      flightNumber: row[6],
+      airport: row[7] || 'MBJ',
+      travelers: toNonNegativeInteger(row[8]),
+      busNeeded: normalizeOption(row[9], BUS_NEEDED_OPTIONS, 'Yes'),
+      location: row[10]
     }));
+}
+
+function getBusPlan() {
+  const groups = {};
+  getFlights()
+    .filter(flight => flight.busNeeded === 'Yes' && flight.dateTime && flight.travelers > 0)
+    .forEach(flight => {
+      const key = [flight.direction, flight.dateTime, flight.airport, flight.location].join('|');
+      if (!groups[key]) {
+        groups[key] = {
+          direction: flight.direction,
+          dateTime: flight.dateTime,
+          airport: flight.airport,
+          location: flight.location,
+          totalTravelers: 0,
+          families: []
+        };
+      }
+      groups[key].totalTravelers += flight.travelers;
+      groups[key].families.push({
+        familyName: flight.familyName,
+        travelers: flight.travelers,
+        airline: flight.airline,
+        flightNumber: flight.flightNumber
+      });
+    });
+
+  return Object.keys(groups)
+    .map(key => groups[key])
+    .sort((first, second) => first.direction.localeCompare(second.direction) || first.dateTime.localeCompare(second.dateTime));
 }
 
 function upsertFlight(flight) {
@@ -295,23 +470,53 @@ function upsertFlight(flight) {
     throw new Error('Flight data is required.');
   }
 
-  const familyName = sanitizeText(flight.familyName).trim();
-  if (!familyName) {
-    throw new Error('Family name is required.');
+  const rsvpId = sanitizeText(flight.rsvpId).trim();
+  if (!rsvpId) {
+    throw new Error('Select a family from the RSVP list.');
+  }
+  const rsvp = getRsvps().find(entry => entry.id === rsvpId);
+  if (!rsvp) {
+    throw new Error('The selected RSVP family was not found. Refresh the RSVP list and try again.');
+  }
+  if (rsvp.coming === 'Unfortunately No') {
+    throw new Error('Flight information cannot be added for a family that is not attending.');
+  }
+
+  const travelers = toNonNegativeInteger(flight.travelers);
+  if (travelers < 1 || travelers > rsvp.total) {
+    throw new Error('Travelers must be between 1 and the RSVP family total of ' + rsvp.total + '.');
+  }
+  const dateTime = normalizeDateTime(flight.dateTime);
+  if (!dateTime) {
+    throw new Error('A valid flight day and time is required.');
   }
 
   const sheet = getFlightSheet();
   const savedFlight = {
     id: sanitizeText(flight.id).trim() || Utilities.getUuid(),
-    familyName,
-    arrivalDateTime: normalizeDateTime(flight.arrivalDateTime),
-    departureDateTime: normalizeDateTime(flight.departureDateTime)
+    rsvpId: rsvp.id,
+    familyName: rsvp.familyName,
+    direction: normalizeOption(flight.direction, FLIGHT_DIRECTION_OPTIONS, 'Arrival'),
+    dateTime,
+    airline: sanitizeText(flight.airline).trim(),
+    flightNumber: sanitizeText(flight.flightNumber).trim().toUpperCase(),
+    airport: sanitizeText(flight.airport).trim().toUpperCase() || 'MBJ',
+    travelers,
+    busNeeded: normalizeOption(flight.busNeeded, BUS_NEEDED_OPTIONS, 'Yes'),
+    location: rsvp.location
   };
   const values = [[
     savedFlight.id,
+    savedFlight.rsvpId,
     savedFlight.familyName,
-    savedFlight.arrivalDateTime,
-    savedFlight.departureDateTime
+    savedFlight.direction,
+    savedFlight.dateTime,
+    savedFlight.airline,
+    savedFlight.flightNumber,
+    savedFlight.airport,
+    savedFlight.travelers,
+    savedFlight.busNeeded,
+    savedFlight.location
   ]];
   const existingRow = findRowById(sheet, savedFlight.id);
 
@@ -386,7 +591,10 @@ function normalizeOption(value, options, fallback) {
   return options.includes(option) ? option : fallback;
 }
 
-function normalizeDateTime(value) {
+function normalizeDateTime(value, timeZone) {
+  if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) {
+    return Utilities.formatDate(value, timeZone || Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm");
+  }
   const dateTime = String(value || '').trim();
   return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateTime) ? dateTime : '';
 }

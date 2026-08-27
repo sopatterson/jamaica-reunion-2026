@@ -621,8 +621,57 @@
             color: white;
         }
 
+        .flight-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            color: white;
+            background: #164a43;
+        }
+
+        .flight-stat {
+            padding: 1rem;
+            text-align: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .flight-stat:last-child {
+            border-right: 0;
+        }
+
+        .flight-stat strong,
+        .flight-stat span {
+            display: block;
+        }
+
+        .flight-stat strong {
+            color: var(--jamaica-yellow);
+            font-family: 'Playfair Display', serif;
+            font-size: 1.7rem;
+        }
+
+        .flight-stat span {
+            margin-top: 0.25rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
         .flight-table {
-            min-width: 720px;
+            min-width: 1500px;
+        }
+
+        .flight-table td:first-child {
+            min-width: 210px;
+        }
+
+        .flight-table td:nth-child(3) {
+            min-width: 190px;
+        }
+
+        .flight-table .readonly-value {
+            min-width: 110px;
+            color: #3f594d;
+            font-weight: 700;
         }
 
         /* Flyer Download */
@@ -1217,15 +1266,26 @@
             <div class="rsvp-tracker flight-tracker" id="flights">
                 <div class="flight-tracker-header">
                     <h3>Flight Information Tracker</h3>
-                    <p>Add each traveling family and their arrival and departure times.</p>
+                    <p>Add one row for each group arriving or departing together. Families are linked to the RSVP list for accurate bus counts.</p>
+                </div>
+                <div class="flight-summary" aria-label="Bus transportation summary">
+                    <div class="flight-stat"><strong id="arrivalBusSeats">0</strong><span>Arrival Bus Seats</span></div>
+                    <div class="flight-stat"><strong id="departureBusSeats">0</strong><span>Departure Bus Seats</span></div>
+                    <div class="flight-stat"><strong id="flightGroupCount">0</strong><span>Travel Groups</span></div>
                 </div>
                 <div class="rsvp-table-wrap">
                     <table class="rsvp-table flight-table">
                         <thead>
                             <tr>
                                 <th scope="col">Family Name</th>
-                                <th scope="col">Arrival Day & Time</th>
-                                <th scope="col">Departure Day & Time</th>
+                                <th scope="col">Direction</th>
+                                <th scope="col">Day & Time</th>
+                                <th scope="col">Airline</th>
+                                <th scope="col">Flight #</th>
+                                <th scope="col">Airport</th>
+                                <th scope="col">Travelers</th>
+                                <th scope="col">Bus Needed?</th>
+                                <th scope="col">Location</th>
                                 <th scope="col"><span class="sr-only">Delete</span></th>
                             </tr>
                         </thead>
@@ -1233,9 +1293,10 @@
                     </table>
                 </div>
                 <div class="rsvp-actions">
-                    <button class="action-button" id="addFlightFamily" type="button">+ Add Family</button>
+                    <button class="action-button" id="addFlightFamily" type="button">+ Add Flight Group</button>
                     <button class="action-button secondary" id="refreshFlights" type="button">Refresh Shared List</button>
                     <button class="action-button secondary" id="downloadFlights" type="button">Download Flight List</button>
+                    <button class="action-button secondary" id="downloadBusPlan" type="button">Download Bus Plan</button>
                 </div>
                 <p class="tracker-note" id="flightSaveStatus" aria-live="polite">Connecting to the shared flight spreadsheet...</p>
             </div>
@@ -1436,7 +1497,7 @@
                 <div class="day-header">
                     <div class="day-number">DAY 2</div>
                     <div class="day-info">
-                        <h3>Monday, November 23</h3>
+                        <h3>Tuesday, November 24</h3>
                         <p class="day-title">RESORT DAY - Beach, Pool & Relaxation</p>
                     </div>
                 </div>
@@ -1454,22 +1515,6 @@
                 <div class="day-header">
                     <div class="day-number">DAY 3</div>
                     <div class="day-info">
-                        <h3>Tuesday, November 24</h3>
-                        <p class="day-title">RESORT DAY - Beach & Pool</p>
-                    </div>
-                </div>
-                <div class="day-details">
-                    <p><strong>Relax and enjoy resort amenities</strong></p>
-                    <p>Beach time, pool activities, water sports</p>
-                    <p>Kids clubs and family activities</p>
-                    <p style="margin-top: 1rem; font-style: italic; color: #888;">(Specific activities to be added)</p>
-                </div>
-            </div>
-
-            <div class="agenda-day">
-                <div class="day-header">
-                    <div class="day-number">DAY 4</div>
-                    <div class="day-info">
                         <h3>Wednesday, November 25</h3>
                         <p class="day-title">ADVENTURE DAY</p>
                     </div>
@@ -1485,7 +1530,7 @@
 
             <div class="agenda-day special-day">
                 <div class="day-header">
-                    <div class="day-number">DAY 5</div>
+                    <div class="day-number">DAY 4</div>
                     <div class="day-info">
                         <h3>Thursday, November 26</h3>
                         <p class="day-title">🇯🇲🦃 KELLITS DAY & THANKSGIVING! 🦃🇯🇲</p>
@@ -1513,7 +1558,7 @@
 
             <div class="agenda-day">
                 <div class="day-header">
-                    <div class="day-number">DAY 6</div>
+                    <div class="day-number">DAY 5</div>
                     <div class="day-info">
                         <h3>Friday, November 27</h3>
                         <p class="day-title">FAMILY FUN DAY</p>
@@ -1530,7 +1575,7 @@
 
             <div class="agenda-day">
                 <div class="day-header">
-                    <div class="day-number">DAY 7</div>
+                    <div class="day-number">DAY 6</div>
                     <div class="day-info">
                         <h3>Saturday, November 28</h3>
                         <p class="day-title">CHILL DAY - Relax & Recover</p>
@@ -1547,7 +1592,7 @@
 
             <div class="agenda-day">
                 <div class="day-header">
-                    <div class="day-number">DAY 8</div>
+                    <div class="day-number">DAY 7</div>
                     <div class="day-info">
                         <h3>Sunday, November 29</h3>
                         <p class="day-title">DEPARTURE DAY - Until Next Time!</p>
@@ -1724,6 +1769,7 @@
         let flights = loadFlights();
         const saveTimers = new Map();
         const saveChains = new Map();
+        const rsvpEditVersions = new Map();
         const flightSaveTimers = new Map();
         const flightSaveChains = new Map();
 
@@ -1747,14 +1793,61 @@
 
         function loadFlights() {
             try {
-                return JSON.parse(localStorage.getItem(flightStorageKey)) || [];
+                const storedFlights = JSON.parse(localStorage.getItem(flightStorageKey)) || [];
+                return storedFlights.flatMap(normalizeStoredFlight);
             } catch (error) {
                 return [];
             }
         }
 
+        function normalizeStoredFlight(flight) {
+            if (!flight.arrivalDateTime && !flight.departureDateTime) {
+                return [{
+                    id: flight.id || '',
+                    rsvpId: flight.rsvpId || '',
+                    familyName: flight.familyName || '',
+                    direction: flight.direction || 'Arrival',
+                    dateTime: flight.dateTime || '',
+                    airline: flight.airline || '',
+                    flightNumber: flight.flightNumber || '',
+                    airport: flight.airport || 'MBJ',
+                    travelers: Number(flight.travelers) || 0,
+                    busNeeded: flight.busNeeded || 'Yes',
+                    location: flight.location || ''
+                }];
+            }
+
+            const familyName = String(flight.familyName || '').trim().toLowerCase();
+            const rsvp = rsvps.find(entry => entry.familyName.trim().toLowerCase() === familyName);
+            return [
+                { direction: 'Arrival', dateTime: flight.arrivalDateTime },
+                { direction: 'Departure', dateTime: flight.departureDateTime }
+            ].filter(group => group.dateTime).map((group, index) => ({
+                ...makeFlight(),
+                id: index === 0 ? flight.id || '' : '',
+                rsvpId: rsvp?.id || '',
+                familyName: rsvp?.familyName || flight.familyName || '',
+                direction: group.direction,
+                dateTime: group.dateTime,
+                travelers: rsvp?.total || 0,
+                location: rsvp?.location || ''
+            }));
+        }
+
         function makeFlight() {
-            return { id: '', familyName: '', arrivalDateTime: '', departureDateTime: '' };
+            return {
+                id: '',
+                rsvpId: '',
+                familyName: '',
+                direction: 'Arrival',
+                dateTime: '',
+                airline: '',
+                flightNumber: '',
+                airport: 'MBJ',
+                travelers: 0,
+                busNeeded: 'Yes',
+                location: ''
+            };
         }
 
         function escapeHtml(value) {
@@ -1773,9 +1866,9 @@
                 return `
                 <tr data-index="${index}"${mismatch ? ' class="count-mismatch"' : ''}>
                     <td><input data-field="familyName" type="text" value="${escapeHtml(rsvp.familyName)}" aria-label="Family name" placeholder="e.g. Patterson Family"></td>
-                    <td><input data-field="total" type="number" value="${rsvp.total}" min="0" inputmode="numeric" aria-label="Total number in family" aria-invalid="${mismatch}"></td>
-                    <td><input data-field="children" type="number" value="${rsvp.children}" min="0" inputmode="numeric" aria-label="Number age 17 and below"></td>
-                    <td><input data-field="adults" type="number" value="${rsvp.adults}" min="0" inputmode="numeric" aria-label="Number age 18 and above"></td>
+                    <td><input data-field="total" type="number" value="${rsvp.total}" min="0" step="1" inputmode="numeric" aria-label="Total number in family" aria-invalid="${mismatch}"></td>
+                    <td><input data-field="children" type="number" value="${rsvp.children}" min="0" step="1" inputmode="numeric" aria-label="Number age 17 and below"></td>
+                    <td><input data-field="adults" type="number" value="${rsvp.adults}" min="0" step="1" inputmode="numeric" aria-label="Number age 18 and above"></td>
                     <td><select data-field="location" aria-label="Resort location"><option value="Selection"${rsvp.location === 'Selection' ? ' selected' : ''}>Selection</option><option value="Waves"${rsvp.location === 'Waves' ? ' selected' : ''}>Waves</option><option value="Offsite"${rsvp.location === 'Offsite' ? ' selected' : ''}>Offsite</option></select></td>
                     <td><select data-field="coming" aria-label="Are you coming"><option value="Yes"${rsvp.coming === 'Yes' ? ' selected' : ''}>Yes</option><option value="Unfortunately No"${rsvp.coming === 'Unfortunately No' ? ' selected' : ''}>Unfortunately No</option><option value="Will Know By 15 Sept"${rsvp.coming === 'Will Know By 15 Sept' ? ' selected' : ''}>Will Know By 15 Sept</option></select></td>
                     <td><button class="delete-rsvp" type="button" aria-label="Delete ${escapeHtml(rsvp.familyName || 'family')} row">×</button></td>
@@ -1790,13 +1883,41 @@
                 flights.push(makeFlight());
             }
 
-            flightRows.innerHTML = flights.map((flight, index) => `
+            const attendingFamilies = rsvps.filter(rsvp => rsvp.id && rsvp.familyName.trim() && rsvp.coming !== 'Unfortunately No');
+            flightRows.innerHTML = flights.map((flight, index) => {
+                const familyOptions = attendingFamilies.map(rsvp => `<option value="${escapeHtml(rsvp.id)}"${flight.rsvpId === rsvp.id ? ' selected' : ''}>${escapeHtml(rsvp.familyName)} (${rsvp.total})</option>`).join('');
+                const missingFamilyOption = flight.rsvpId && !attendingFamilies.some(rsvp => rsvp.id === flight.rsvpId)
+                    ? `<option value="${escapeHtml(flight.rsvpId)}" selected>${escapeHtml(flight.familyName || 'Unavailable RSVP')}</option>`
+                    : '';
+                return `
                 <tr data-index="${index}">
-                    <td><input data-field="familyName" type="text" value="${escapeHtml(flight.familyName)}" aria-label="Flight family name" placeholder="e.g. Patterson Family"></td>
-                    <td><input data-field="arrivalDateTime" type="datetime-local" value="${escapeHtml(flight.arrivalDateTime || '')}" aria-label="Arrival day and time for ${escapeHtml(flight.familyName || 'family')}"></td>
-                    <td><input data-field="departureDateTime" type="datetime-local" value="${escapeHtml(flight.departureDateTime || '')}" aria-label="Departure day and time for ${escapeHtml(flight.familyName || 'family')}"></td>
-                    <td><button class="delete-flight" type="button" aria-label="Delete ${escapeHtml(flight.familyName || 'family')} flight row">×</button></td>
-                </tr>`).join('');
+                    <td><select data-field="rsvpId" aria-label="RSVP family"><option value="">Select RSVP family</option>${missingFamilyOption}${familyOptions}</select></td>
+                    <td><select data-field="direction" aria-label="Flight direction"><option value="Arrival"${flight.direction === 'Arrival' ? ' selected' : ''}>Arrival</option><option value="Departure"${flight.direction === 'Departure' ? ' selected' : ''}>Departure</option></select></td>
+                    <td><input data-field="dateTime" type="datetime-local" value="${escapeHtml(flight.dateTime || '')}" aria-label="${escapeHtml(flight.direction)} day and time for ${escapeHtml(flight.familyName || 'family')}"></td>
+                    <td><input data-field="airline" type="text" value="${escapeHtml(flight.airline || '')}" aria-label="Airline" placeholder="e.g. JetBlue"></td>
+                    <td><input data-field="flightNumber" type="text" value="${escapeHtml(flight.flightNumber || '')}" aria-label="Flight number" placeholder="e.g. B61217"></td>
+                    <td><input data-field="airport" type="text" value="${escapeHtml(flight.airport || 'MBJ')}" aria-label="Airport code" maxlength="3"></td>
+                    <td><input data-field="travelers" type="number" value="${Number(flight.travelers) || 0}" min="1" max="${familyTotalForFlight(flight) || ''}" inputmode="numeric" aria-label="Number of travelers"></td>
+                    <td><select data-field="busNeeded" aria-label="Bus transportation needed"><option value="Yes"${flight.busNeeded === 'Yes' ? ' selected' : ''}>Yes</option><option value="No"${flight.busNeeded === 'No' ? ' selected' : ''}>No</option></select></td>
+                    <td class="readonly-value">${escapeHtml(flight.location || 'Select family')}</td>
+                    <td><button class="delete-flight" type="button" aria-label="Delete ${escapeHtml(flight.familyName || 'family')} flight group">×</button></td>
+                </tr>`;
+            }).join('');
+            updateFlightSummary();
+        }
+
+        function familyTotalForFlight(flight) {
+            return Number(rsvps.find(rsvp => rsvp.id === flight.rsvpId)?.total) || 0;
+        }
+
+        function updateFlightSummary() {
+            const busGroups = flights.filter(flight => flight.id && flight.busNeeded === 'Yes');
+            const seats = direction => busGroups
+                .filter(flight => flight.direction === direction)
+                .reduce((total, flight) => total + (Number(flight.travelers) || 0), 0);
+            document.getElementById('arrivalBusSeats').textContent = seats('Arrival');
+            document.getElementById('departureBusSeats').textContent = seats('Departure');
+            document.getElementById('flightGroupCount').textContent = flights.filter(flight => flight.id).length;
         }
 
         function saveLocally(message = 'Saved locally while the shared spreadsheet is unavailable.') {
@@ -1806,7 +1927,7 @@
         }
 
         async function requestRsvp(action, data = {}) {
-            const isGetRequest = action === 'list' || action === 'listFlights';
+            const isGetRequest = action === 'list' || action === 'listFlights' || action === 'listBusPlan';
             const options = isGetRequest
                 ? {}
                 : {
@@ -1829,6 +1950,7 @@
                 rsvps = Array.isArray(result.rsvps) ? result.rsvps.map(normalizeRsvpAges) : [];
                 localStorage.setItem(rsvpStorageKey, JSON.stringify(rsvps));
                 renderRsvps();
+                renderFlightRows();
                 saveStatus.textContent = 'Shared RSVP list is up to date. Changes save automatically for everyone.';
             } catch (error) {
                 renderRsvps();
@@ -1840,7 +1962,7 @@
             flightSaveStatus.textContent = 'Loading the shared flight spreadsheet...';
             try {
                 const result = await requestRsvp('listFlights');
-                flights = Array.isArray(result.flights) ? result.flights : [];
+                flights = Array.isArray(result.flights) ? result.flights.flatMap(normalizeStoredFlight) : [];
                 localStorage.setItem(flightStorageKey, JSON.stringify(flights));
                 renderFlightRows();
                 flightSaveStatus.textContent = 'Shared flight list is up to date. Changes save automatically for everyone.';
@@ -1851,6 +1973,8 @@
         }
 
         function scheduleSharedSave(rsvp) {
+            const editVersion = (rsvpEditVersions.get(rsvp) || 0) + 1;
+            rsvpEditVersions.set(rsvp, editVersion);
             saveLocally('Saving to the shared spreadsheet...');
             clearTimeout(saveTimers.get(rsvp));
             saveTimers.delete(rsvp);
@@ -1860,10 +1984,11 @@
                 saveStatus.textContent = 'Not saved: Total in Family must equal Age 17 & Below + Age 18 & Above.';
                 return;
             }
+            const rsvpSnapshot = { ...rsvp };
             saveTimers.set(rsvp, setTimeout(() => {
                 saveTimers.delete(rsvp);
                 const previousSave = saveChains.get(rsvp) || Promise.resolve();
-                const currentSave = previousSave.then(() => saveSharedRsvp(rsvp));
+                const currentSave = previousSave.then(() => saveSharedRsvp(rsvp, rsvpSnapshot, editVersion));
                 saveChains.set(rsvp, currentSave);
                 currentSave.finally(() => {
                     if (saveChains.get(rsvp) === currentSave) saveChains.delete(rsvp);
@@ -1871,13 +1996,17 @@
             }, 700));
         }
 
-        async function saveSharedRsvp(rsvp) {
+        async function saveSharedRsvp(rsvp, rsvpSnapshot, editVersion) {
             try {
-                const result = await requestRsvp('upsert', { rsvp });
+                if (!rsvpSnapshot.id && rsvp.id) rsvpSnapshot.id = rsvp.id;
+                const result = await requestRsvp('upsert', { rsvp: rsvpSnapshot });
+                if (!rsvp.id) rsvp.id = result.rsvp.id;
+                if (rsvpEditVersions.get(rsvp) !== editVersion) return;
                 Object.assign(rsvp, result.rsvp);
                 localStorage.setItem(rsvpStorageKey, JSON.stringify(rsvps));
                 saveStatus.textContent = 'Saved to the shared RSVP spreadsheet.';
             } catch (error) {
+                if (rsvpEditVersions.get(rsvp) !== editVersion) return;
                 saveStatus.textContent = `Could not sync: ${error.message} Your changes are saved on this device.`;
             }
         }
@@ -1891,7 +2020,17 @@
             saveFlightsLocally('Saving to the shared flight spreadsheet...');
             clearTimeout(flightSaveTimers.get(flight));
             flightSaveTimers.delete(flight);
-            if (!flight.familyName.trim()) return;
+            updateFlightSummary();
+            if (!flight.rsvpId) return;
+            if (!flight.dateTime) {
+                flightSaveStatus.textContent = 'Select a flight day and time to save this group.';
+                return;
+            }
+            const familyTotal = familyTotalForFlight(flight);
+            if (flight.travelers < 1 || flight.travelers > familyTotal) {
+                flightSaveStatus.textContent = `Travelers must be between 1 and the RSVP family total of ${familyTotal}.`;
+                return;
+            }
             flightSaveTimers.set(flight, setTimeout(() => {
                 flightSaveTimers.delete(flight);
                 const previousSave = flightSaveChains.get(flight) || Promise.resolve();
@@ -1908,6 +2047,7 @@
                 const result = await requestRsvp('upsertFlight', { flight });
                 Object.assign(flight, result.flight);
                 localStorage.setItem(flightStorageKey, JSON.stringify(flights));
+                updateFlightSummary();
                 flightSaveStatus.textContent = 'Saved to the shared flight spreadsheet.';
             } catch (error) {
                 flightSaveStatus.textContent = `Could not sync: ${error.message} Your changes are saved on this device.`;
@@ -1936,20 +2076,45 @@
             document.getElementById('comingAdults').textContent = sum('adults');
         }
 
-        rsvpRows.addEventListener('input', event => {
+        function updateRsvpFromField(event) {
             const field = event.target.dataset.field;
             if (!field) return;
             const index = Number(event.target.closest('tr').dataset.index);
             rsvps[index][field] = event.target.type === 'number' ? Math.max(0, Number(event.target.value) || 0) : event.target.value;
             scheduleSharedSave(rsvps[index]);
+        }
+
+        rsvpRows.addEventListener('input', event => {
+            if (event.target.matches('select')) return;
+            updateRsvpFromField(event);
         });
 
-        flightRows.addEventListener('input', event => {
+        function updateFlightFromField(event) {
             const field = event.target.dataset.field;
             if (!field) return;
             const index = Number(event.target.closest('tr').dataset.index);
-            flights[index][field] = event.target.value;
-            scheduleFlightSave(flights[index]);
+            const flight = flights[index];
+            flight[field] = event.target.type === 'number'
+                ? Math.max(0, Number(event.target.value) || 0)
+                : event.target.value;
+            if (field === 'rsvpId') {
+                const rsvp = rsvps.find(entry => entry.id === flight.rsvpId);
+                flight.familyName = rsvp?.familyName || '';
+                flight.location = rsvp?.location || '';
+                if (rsvp && (!flight.travelers || flight.travelers > rsvp.total)) flight.travelers = rsvp.total;
+                renderFlightRows();
+            }
+            scheduleFlightSave(flight);
+        }
+
+        flightRows.addEventListener('input', event => {
+            if (event.target.matches('select')) return;
+            updateFlightFromField(event);
+        });
+
+        flightRows.addEventListener('change', event => {
+            if (!event.target.dataset.field) return;
+            updateFlightFromField(event);
         });
 
         flightRows.addEventListener('click', async event => {
@@ -1979,11 +2144,8 @@
         });
 
         rsvpRows.addEventListener('change', event => {
-            if (event.target.dataset.field === 'coming' || event.target.dataset.field === 'location') {
-                const index = Number(event.target.closest('tr').dataset.index);
-                rsvps[index][event.target.dataset.field] = event.target.value;
-                scheduleSharedSave(rsvps[index]);
-            }
+            if (!event.target.dataset.field) return;
+            updateRsvpFromField(event);
         });
 
         rsvpRows.addEventListener('click', async event => {
@@ -2023,9 +2185,9 @@
 
         document.getElementById('addFlightFamily').addEventListener('click', () => {
             flights.push(makeFlight());
-            saveFlightsLocally('New row added. Enter a family name to save it to the shared flight spreadsheet.');
+            saveFlightsLocally('New group added. Select an RSVP family and enter the flight time to save it.');
             renderFlightRows();
-            flightRows.querySelector('tr:last-child input').focus();
+            flightRows.querySelector('tr:last-child select').focus();
         });
 
         document.getElementById('refreshRsvp').addEventListener('click', loadSharedRsvps);
@@ -2045,9 +2207,12 @@
         });
 
         document.getElementById('downloadFlights').addEventListener('click', () => {
-            const headers = ['Family Name', 'Arrival Day & Time', 'Departure Day & Time'];
+            const headers = ['Family Name', 'Direction', 'Day & Time', 'Airline', 'Flight Number', 'Airport', 'Travelers', 'Bus Needed', 'Location'];
             const quote = value => `"${String(value).replace(/"/g, '""')}"`;
-            const rows = flights.filter(flight => flight.familyName.trim()).map(flight => [flight.familyName, flight.arrivalDateTime || '', flight.departureDateTime || '']);
+            const rows = flights
+                .filter(flight => flight.id)
+                .sort((first, second) => first.direction.localeCompare(second.direction) || first.dateTime.localeCompare(second.dateTime))
+                .map(flight => [flight.familyName, flight.direction, flight.dateTime, flight.airline, flight.flightNumber, flight.airport, flight.travelers, flight.busNeeded, flight.location]);
             const csv = [headers, ...rows].map(row => row.map(quote).join(',')).join('\n');
             const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
             const link = document.createElement('a');
@@ -2055,6 +2220,33 @@
             link.download = 'jamaica-reunion-2026-flights.csv';
             link.click();
             URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('downloadBusPlan').addEventListener('click', async () => {
+            flightSaveStatus.textContent = 'Preparing the shared bus plan...';
+            try {
+                const result = await requestRsvp('listBusPlan');
+                const headers = ['Direction', 'Day & Time', 'Airport', 'Destination', 'Bus Seats', 'Family Groups'];
+                const quote = value => `"${String(value).replace(/"/g, '""')}"`;
+                const rows = result.busGroups.map(group => [
+                    group.direction,
+                    group.dateTime,
+                    group.airport,
+                    group.location,
+                    group.totalTravelers,
+                    group.families.map(family => `${family.familyName} (${family.travelers})${family.flightNumber ? ` - ${family.airline} ${family.flightNumber}`.trim() : ''}`).join('; ')
+                ]);
+                const csv = [headers, ...rows].map(row => row.map(quote).join(',')).join('\n');
+                const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'jamaica-reunion-2026-bus-plan.csv';
+                link.click();
+                URL.revokeObjectURL(url);
+                flightSaveStatus.textContent = 'Shared bus plan downloaded.';
+            } catch (error) {
+                flightSaveStatus.textContent = `Could not prepare bus plan: ${error.message}`;
+            }
         });
 
         document.getElementById('shareFlyer').addEventListener('click', async () => {
