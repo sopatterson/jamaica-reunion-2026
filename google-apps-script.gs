@@ -669,8 +669,6 @@ function upsertFlight(flight) {
     throw new Error('A valid flight day and time is required.');
   }
 
-  const lock = LockService.getScriptLock();
-  lock.waitLock(10000);
   const requestedId = sanitizeText(flight.id).trim();
   const savedFlight = {
     id: requestedId || Utilities.getUuid(),
@@ -685,41 +683,37 @@ function upsertFlight(flight) {
     busNeeded: normalizeOption(flight.busNeeded, BUS_NEEDED_OPTIONS, 'Yes'),
     location: rsvp.location
   };
-  try {
-    const sheet = getFlightSheet();
-    if (!requestedId && sheet.getLastRow() > 1) {
-      const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, FLIGHT_HEADERS.length).getValues();
-      const matchingDirection = rows.find(row =>
-        String(row[1]) === savedFlight.rsvpId &&
-        normalizeOption(row[3], FLIGHT_DIRECTION_OPTIONS, 'Arrival') === savedFlight.direction
-      );
-      if (matchingDirection) {
-        savedFlight.id = String(matchingDirection[0]);
-      }
+  const sheet = getFlightSheet();
+  if (!requestedId && sheet.getLastRow() > 1) {
+    const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, FLIGHT_HEADERS.length).getValues();
+    const matchingDirection = rows.find(row =>
+      String(row[1]) === savedFlight.rsvpId &&
+      normalizeOption(row[3], FLIGHT_DIRECTION_OPTIONS, 'Arrival') === savedFlight.direction
+    );
+    if (matchingDirection) {
+      savedFlight.id = String(matchingDirection[0]);
     }
+  }
 
-    const values = [[
-      savedFlight.id,
-      savedFlight.rsvpId,
-      savedFlight.familyName,
-      savedFlight.direction,
-      savedFlight.dateTime,
-      savedFlight.airline,
-      savedFlight.flightNumber,
-      savedFlight.airport,
-      savedFlight.travelers,
-      savedFlight.busNeeded,
-      savedFlight.location
-    ]];
-    const existingRow = findRowById(sheet, savedFlight.id);
+  const values = [[
+    savedFlight.id,
+    savedFlight.rsvpId,
+    savedFlight.familyName,
+    savedFlight.direction,
+    savedFlight.dateTime,
+    savedFlight.airline,
+    savedFlight.flightNumber,
+    savedFlight.airport,
+    savedFlight.travelers,
+    savedFlight.busNeeded,
+    savedFlight.location
+  ]];
+  const existingRow = findRowById(sheet, savedFlight.id);
 
-    if (existingRow) {
-      sheet.getRange(existingRow, 1, 1, FLIGHT_HEADERS.length).setValues(values);
-    } else {
-      sheet.appendRow(values[0]);
-    }
-  } finally {
-    lock.releaseLock();
+  if (existingRow) {
+    sheet.getRange(existingRow, 1, 1, FLIGHT_HEADERS.length).setValues(values);
+  } else {
+    sheet.appendRow(values[0]);
   }
   return savedFlight;
 }
