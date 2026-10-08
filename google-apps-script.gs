@@ -669,9 +669,11 @@ function upsertFlight(flight) {
     throw new Error('A valid flight day and time is required.');
   }
 
-  const sheet = getFlightSheet();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  const requestedId = sanitizeText(flight.id).trim();
   const savedFlight = {
-    id: sanitizeText(flight.id).trim() || Utilities.getUuid(),
+    id: requestedId || Utilities.getUuid(),
     rsvpId: rsvp.id,
     familyName: rsvp.familyName,
     direction: normalizeOption(flight.direction, FLIGHT_DIRECTION_OPTIONS, 'Arrival'),
@@ -683,25 +685,41 @@ function upsertFlight(flight) {
     busNeeded: normalizeOption(flight.busNeeded, BUS_NEEDED_OPTIONS, 'Yes'),
     location: rsvp.location
   };
-  const values = [[
-    savedFlight.id,
-    savedFlight.rsvpId,
-    savedFlight.familyName,
-    savedFlight.direction,
-    savedFlight.dateTime,
-    savedFlight.airline,
-    savedFlight.flightNumber,
-    savedFlight.airport,
-    savedFlight.travelers,
-    savedFlight.busNeeded,
-    savedFlight.location
-  ]];
-  const existingRow = findRowById(sheet, savedFlight.id);
+  try {
+    const sheet = getFlightSheet();
+    if (!requestedId && sheet.getLastRow() > 1) {
+      const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, FLIGHT_HEADERS.length).getValues();
+      const matchingDirection = rows.find(row =>
+        String(row[1]) === savedFlight.rsvpId &&
+        normalizeOption(row[3], FLIGHT_DIRECTION_OPTIONS, 'Arrival') === savedFlight.direction
+      );
+      if (matchingDirection) {
+        savedFlight.id = String(matchingDirection[0]);
+      }
+    }
 
-  if (existingRow) {
-    sheet.getRange(existingRow, 1, 1, FLIGHT_HEADERS.length).setValues(values);
-  } else {
-    sheet.appendRow(values[0]);
+    const values = [[
+      savedFlight.id,
+      savedFlight.rsvpId,
+      savedFlight.familyName,
+      savedFlight.direction,
+      savedFlight.dateTime,
+      savedFlight.airline,
+      savedFlight.flightNumber,
+      savedFlight.airport,
+      savedFlight.travelers,
+      savedFlight.busNeeded,
+      savedFlight.location
+    ]];
+    const existingRow = findRowById(sheet, savedFlight.id);
+
+    if (existingRow) {
+      sheet.getRange(existingRow, 1, 1, FLIGHT_HEADERS.length).setValues(values);
+    } else {
+      sheet.appendRow(values[0]);
+    }
+  } finally {
+    lock.releaseLock();
   }
   return savedFlight;
 }
@@ -780,7 +798,8 @@ function normalizeDateTime(value, timeZone) {
     return Utilities.formatDate(value, timeZone || Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm");
   }
   const dateTime = String(value || '').trim();
-  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateTime) ? dateTime : '';
+  const match = dateTime.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{1,2}):(\d{2})$/);
+  return match ? match[1] + 'T' + match[2].padStart(2, '0') + ':' + match[3] : '';
 }
 
 function toNonNegativeInteger(value) {

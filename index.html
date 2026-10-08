@@ -1239,7 +1239,7 @@
         <input id="photoSubmitter" type="text" maxlength="80" placeholder="Your name" required>
         <input class="sr-only" id="photoFile" type="file" accept="image/jpeg,image/png,image/webp" required>
         <button class="action-button" id="choosePhoto" type="button">Upload a Family Photo</button>
-        <p class="photo-upload-status" id="photoUploadStatus" aria-live="polite">Photos are reviewed before being added to the carousel.</p>
+        <p class="photo-upload-status" id="photoUploadStatus" aria-live="polite">Photos are reviewed before being added.</p>
     </form>
 
     <!-- Main Content -->
@@ -2002,6 +2002,17 @@
             const index = Number(event.target.closest('tr').dataset.index);
             const flight = flights[index];
             if (field === 'direction' && flight.id && event.target.value !== flight.direction) {
+                const existingIndex = flights.findIndex((entry, entryIndex) =>
+                    entryIndex !== index &&
+                    entry.rsvpId === flight.rsvpId &&
+                    entry.direction === event.target.value
+                );
+                if (existingIndex >= 0) {
+                    saveFlightsLocally(`${event.target.value} flight already exists for ${flight.familyName}. Opening that row instead.`);
+                    renderFlightRows();
+                    flightRows.querySelector(`tr[data-index="${existingIndex}"] [data-field="dateTime"]`).focus();
+                    return;
+                }
                 const newFlight = {
                     ...makeFlight(event.target.value),
                     rsvpId: flight.rsvpId,
