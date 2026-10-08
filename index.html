@@ -587,17 +587,6 @@
             border: 2px solid var(--palm-green);
         }
 
-        .delete-flight {
-            width: 42px;
-            height: 42px;
-            color: #8b251b;
-            background: #fff1ef;
-            border: 1px solid #efb5ae;
-            border-radius: 4px;
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-
         .tracker-note {
             padding: 0 1rem 1rem;
             color: #69766f;
@@ -1342,7 +1331,6 @@
                                 <th scope="col">Travelers</th>
                                 <th scope="col">Bus Needed?</th>
                                 <th scope="col">Location</th>
-                                <th scope="col"><span class="sr-only">Delete</span></th>
                             </tr>
                         </thead>
                         <tbody id="flightRows"></tbody>
@@ -1646,9 +1634,28 @@
             track.querySelectorAll('video').forEach(video => videoObserver.observe(video));
         }
 
-        initializeCarousel();
-
         const rsvpEndpoint = 'https://script.google.com/macros/s/AKfycbyP_WliVMHQDVhYX1HX7oHkEYcRZcQKt3pfebS6VG9-x7dibMN4OVw1cfw6XLqSRPeA/exec';
+
+        async function loadApprovedCarouselMedia() {
+            try {
+                const response = await fetch(`${rsvpEndpoint}?action=listApprovedPhotos`);
+                const result = await response.json();
+                if (!result.success || !Array.isArray(result.photos)) throw new Error(result.error || 'Approved photos could not be loaded.');
+                result.photos.forEach(photo => {
+                    if (photo && photo.url && !carouselMedia.some(media => media.src === photo.url)) {
+                        const media = { type: 'image', src: photo.url };
+                        carouselMedia.push(media);
+                        document.querySelectorAll('.carousel-group').forEach((group, index) => {
+                            group.appendChild(createCarouselSlide(media, index > 0));
+                        });
+                    }
+                });
+                document.querySelector('.carousel-track').style.animationDuration = `${Math.max(30, carouselMedia.length * 6)}s`;
+            } catch (error) {
+                console.warn('Approved reunion photos could not be loaded.', error);
+            }
+        }
+
         const rsvpStorageKey = 'jamaica-reunion-2026-rsvps';
         const flightStorageKey = 'jamaica-reunion-2026-flights';
         const rsvpRows = document.getElementById('rsvpRows');
@@ -1789,7 +1796,6 @@
                     <td><input data-field="travelers" type="number" value="${Number(flight.travelers) || 0}" min="1" max="${familyTotalForFlight(flight) || ''}" inputmode="numeric" aria-label="Number of travelers"></td>
                     <td><select data-field="busNeeded" aria-label="Bus transportation needed"><option value="Yes"${flight.busNeeded === 'Yes' ? ' selected' : ''}>Yes</option><option value="No"${flight.busNeeded === 'No' ? ' selected' : ''}>No</option></select></td>
                     <td class="readonly-value">${escapeHtml(flight.location || 'Select family')}</td>
-                    <td><button class="delete-flight" type="button" aria-label="Delete ${escapeHtml(flight.familyName || 'family')} flight group">×</button></td>
                 </tr>`;
             }).join('');
             updateFlightSummary();
@@ -2034,32 +2040,6 @@
             updateFlightFromField(event);
         });
 
-        flightRows.addEventListener('click', async event => {
-            const button = event.target.closest('.delete-flight');
-            if (!button) return;
-            const index = Number(button.closest('tr').dataset.index);
-            const [removed] = flights.splice(index, 1);
-            clearTimeout(flightSaveTimers.get(removed));
-            flightSaveTimers.delete(removed);
-            saveFlightsLocally('Removing family from the shared flight spreadsheet...');
-            renderFlightRows();
-            const pendingSave = flightSaveChains.get(removed);
-            if (pendingSave) await pendingSave;
-            if (!removed.id) {
-                flightSaveStatus.textContent = 'Unsaved flight row removed.';
-                return;
-            }
-            try {
-                await requestRsvp('deleteFlight', { id: removed.id });
-                flightSaveChains.delete(removed);
-                flightSaveStatus.textContent = 'Flight entry moved to the recovery archive.';
-            } catch (error) {
-                flights.splice(index, 0, removed);
-                saveFlightsLocally(`Could not delete: ${error.message}`);
-                renderFlightRows();
-            }
-        });
-
         rsvpRows.addEventListener('change', event => {
             if (!event.target.dataset.field) return;
             updateRsvpFromField(event);
@@ -2216,6 +2196,8 @@
 
         renderRsvps();
         renderFlightRows();
+        initializeCarousel();
+        loadApprovedCarouselMedia();
         loadSharedRsvps();
         loadSharedFlights();
     </script>

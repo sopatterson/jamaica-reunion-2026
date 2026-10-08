@@ -5,8 +5,10 @@ const FLIGHT_SHEET_NAME = 'Flights';
 const FLIGHT_ARCHIVE_SHEET_NAME = 'Flight Archive';
 const PHOTO_REVIEW_EMAIL = 'mrpatterson@gmail.com';
 const PHOTO_UPLOAD_FOLDER_NAME = 'Pending Jamaica Reunion Photos';
+const PHOTO_APPROVED_FOLDER_NAME = 'Approved Jamaica Reunion Photos';
 const PHOTO_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
 const PHOTO_UPLOAD_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const PHOTO_REVIEW_PROPERTY_PREFIX = 'photoReview:';
 
 const HEADERS = [
   'ID',
@@ -115,6 +117,14 @@ function doGet(event) {
       return jsonResponse({ success: true, busGroups: getBusPlan() });
     }
 
+    if (action === 'listApprovedPhotos') {
+      return jsonResponse({ success: true, photos: getApprovedPhotos() });
+    }
+
+    if (action === 'reviewPhoto') {
+      return renderPhotoReviewPage(event.parameter);
+    }
+
     if (action === 'health') {
       return jsonResponse({
         success: true,
@@ -149,16 +159,15 @@ function doPost(event) {
       });
     }
 
-    if (request.action === 'deleteFlight') {
-      deleteFlight(request.id);
-      return jsonResponse({ success: true, id: request.id, archived: true });
-    }
-
     if (request.action === 'submitPhoto') {
       return jsonResponse({
         success: true,
         photo: submitPhotoForReview(request.photo)
       });
+    }
+
+    if (request.action === 'reviewPhoto') {
+      return renderPhotoDecisionPage(request);
     }
 
     return jsonResponse({ success: false, error: 'Unknown POST action.' });
@@ -212,19 +221,26 @@ function submitPhotoForReview(photo) {
     throw new Error('The photo must be smaller than 8 MB.');
   }
 
-  const folderIterator = DriveApp.getFoldersByName(PHOTO_UPLOAD_FOLDER_NAME);
-  const folder = folderIterator.hasNext() ? folderIterator.next() : DriveApp.createFolder(PHOTO_UPLOAD_FOLDER_NAME);
+  const folder = getOrCreatePhotoFolder(PHOTO_UPLOAD_FOLDER_NAME);
   const safeFileName = fileName.replace(/[^a-zA-Z0-9._ -]/g, '_');
   const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmmss');
   const file = folder.createFile(Utilities.newBlob(bytes, mimeType, timestamp + '-' + safeFileName));
   file.setDescription('Submitted by ' + submitter + ' for review before adding to the Jamaica Reunion carousel.');
+
+  const token = Utilities.getUuid() + Utilities.getUuid();
+  PropertiesService.getScriptProperties().setProperty(
+    PHOTO_REVIEW_PROPERTY_PREFIX + file.getId(),
+    JSON.stringify({ token, status: 'pending', submitter, fileName })
+  );
+  const reviewUrl = ScriptApp.getService().getUrl() + '?action=reviewPhoto&id=' +
+    encodeURIComponent(file.getId()) + '&token=' + encodeURIComponent(token);
 
   const subject = 'Jamaica Reunion photo awaiting review';
   const body = [
     submitter + ' submitted a family photo for the reunion carousel.',
     '',
     'Original file: ' + fileName,
-    'Review photo: ' + file.getUrl(),
+    'Review and approve photo: ' + reviewUrl,
     '',
     'The photo has not been added to the website.'
   ].join('\n');
@@ -234,11 +250,108 @@ function submitPhotoForReview(photo) {
     body,
     htmlBody: '<p><strong>' + escapeHtmlForEmail(submitter) + '</strong> submitted a family photo for the reunion carousel.</p>' +
       '<p>Original file: ' + escapeHtmlForEmail(fileName) + '</p>' +
-      '<p><a href="' + file.getUrl() + '">Review the photo in Google Drive</a></p>' +
+        '<p><a href="' + reviewUrl + '" style="background:#075a36;border-radius:4px;color:#ffffff;display:inline-block;font-weight:bold;padding:12px 18px;text-decoration:none;">Review &amp; Approve</a></p>' +
+        '<p><a href="' + file.getUrl() + '">Open the original photo in Google Drive</a></p>' +
       '<p>The photo has not been added to the website.</p>'
   });
 
   return { submitted: true };
+}
+
+function getApprovedPhotos() {
+  const files = getOrCreatePhotoFolder(PHOTO_APPROVED_FOLDER_NAME).getFiles();
+  const photos = [];
+  while (files.hasNext()) {
+    const file = files.next();
+    if (PHOTO_UPLOAD_TYPES.includes(file.getMimeType())) {
+      photos.push({
+        id: file.getId(),
+        name: file.getName(),
+        url: 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(file.getId()) + '&sz=w1600'
+      });
+    }
+  }
+  return photos;
+}
+
+function renderPhotoReviewPage(parameters) {
+  const fileId = String(parameters.id || '');
+  const token = String(parameters.token || '');
+  const review = getPhotoReview(fileId, token);
+  const file = DriveApp.getFileById(fileId);
+  const previewBlob = file.getThumbnail() || file.getBlob();
+  const imageUrl = 'data:' + previewBlob.getContentType() + ';base64,' + Utilities.base64Encode(previewBlob.getBytes());
+  const serviceUrl = ScriptApp.getService().getUrl();
+  const disabled = review.status === 'pending' ? '' : ' disabled';
+  const statusText = review.status === 'pending'
+    ? 'Choose whether this photo should appear in the public family carousel.'
+    : 'This photo was already ' + review.status + '.';
+  const html = '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>Review reunion photo</title></head><body style="background:#f4f1e8;color:#17352b;font-family:Arial,sans-serif;margin:0;padding:24px;">' +
+    '<main style="margin:0 auto;max-width:720px;"><h1 style="font-size:28px;">Review reunion photo</h1>' +
+    '<p><strong>Submitted by:</strong> ' + escapeHtmlForEmail(review.submitter) + '</p>' +
+    '<p>' + escapeHtmlForEmail(statusText) + '</p>' +
+    '<img src="' + imageUrl + '" alt="Submitted family photo" style="display:block;height:auto;max-height:65vh;max-width:100%;object-fit:contain;">' +
+    '<form method="post" action="' + serviceUrl + '" style="display:flex;gap:12px;margin-top:20px;">' +
+    '<input type="hidden" name="action" value="reviewPhoto"><input type="hidden" name="id" value="' + escapeHtmlForEmail(fileId) + '">' +
+    '<input type="hidden" name="token" value="' + escapeHtmlForEmail(token) + '">' +
+    '<button name="decision" value="approve"' + disabled + ' style="background:#075a36;border:0;border-radius:4px;color:white;font-size:16px;font-weight:bold;padding:12px 18px;">Approve</button>' +
+    '<button name="decision" value="reject"' + disabled + ' style="background:#8b1e1e;border:0;border-radius:4px;color:white;font-size:16px;font-weight:bold;padding:12px 18px;">Reject</button>' +
+    '</form><p><a href="' + file.getUrl() + '" target="_blank">Open original in Google Drive</a></p></main></body></html>';
+  return HtmlService.createHtmlOutput(html).setTitle('Review reunion photo');
+}
+
+function renderPhotoDecisionPage(request) {
+  const fileId = String(request.id || '');
+  const token = String(request.token || '');
+  const decision = String(request.decision || '');
+  if (!['approve', 'reject'].includes(decision)) {
+    throw new Error('Choose Approve or Reject.');
+  }
+
+  const review = getPhotoReview(fileId, token);
+  if (review.status !== 'pending') {
+    return photoReviewResultPage('Already reviewed', 'This photo was already ' + review.status + '.');
+  }
+
+  const file = DriveApp.getFileById(fileId);
+  if (decision === 'approve') {
+    file.moveTo(getOrCreatePhotoFolder(PHOTO_APPROVED_FOLDER_NAME));
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    file.setDescription('Approved by email review for the Jamaica Reunion carousel. Submitted by ' + review.submitter + '.');
+  } else {
+    file.setTrashed(true);
+  }
+  review.status = decision === 'approve' ? 'approved' : 'rejected';
+  PropertiesService.getScriptProperties().setProperty(PHOTO_REVIEW_PROPERTY_PREFIX + fileId, JSON.stringify(review));
+  const message = decision === 'approve'
+    ? 'The photo is approved and will appear in the public carousel on the next page load.'
+    : 'The photo was rejected and removed from the review queue.';
+  return photoReviewResultPage(decision === 'approve' ? 'Photo approved' : 'Photo rejected', message);
+}
+
+function getPhotoReview(fileId, token) {
+  const stored = PropertiesService.getScriptProperties().getProperty(PHOTO_REVIEW_PROPERTY_PREFIX + fileId);
+  if (!stored) {
+    throw new Error('This review link is invalid or expired.');
+  }
+  const review = JSON.parse(stored);
+  if (review.token !== token) {
+    throw new Error('This review link is invalid or expired.');
+  }
+  return review;
+}
+
+function photoReviewResultPage(title, message) {
+  return HtmlService.createHtmlOutput('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>' + escapeHtmlForEmail(title) + '</title></head><body style="background:#f4f1e8;color:#17352b;font-family:Arial,sans-serif;padding:24px;">' +
+    '<main style="margin:10vh auto;max-width:600px;"><h1>' + escapeHtmlForEmail(title) + '</h1><p>' + escapeHtmlForEmail(message) + '</p></main></body></html>')
+    .setTitle(title);
+}
+
+function getOrCreatePhotoFolder(name) {
+  const folders = DriveApp.getFoldersByName(name);
+  return folders.hasNext() ? folders.next() : DriveApp.createFolder(name);
 }
 
 function escapeHtmlForEmail(value) {
@@ -641,7 +754,13 @@ function getRsvpSheet() {
 }
 
 function parseRequest(event) {
-  if (!event || !event.postData || !event.postData.contents) {
+  if (!event) {
+    throw new Error('The request body is empty.');
+  }
+  if (event.parameter && event.parameter.action) {
+    return event.parameter;
+  }
+  if (!event.postData || !event.postData.contents) {
     throw new Error('The request body is empty.');
   }
   try {
