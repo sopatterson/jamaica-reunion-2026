@@ -495,6 +495,11 @@
             text-transform: uppercase;
         }
 
+        .location-summary {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            background: var(--ocean-deep);
+        }
+
         .rsvp-table-wrap {
             overflow-x: auto;
         }
@@ -582,7 +587,6 @@
             border: 2px solid var(--palm-green);
         }
 
-        .delete-rsvp,
         .delete-flight {
             width: 42px;
             height: 42px;
@@ -1062,6 +1066,19 @@
                 border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             }
 
+            .location-summary {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .location-summary .rsvp-stat {
+                border-right: 1px solid rgba(255, 255, 255, 0.2);
+                border-bottom: 0;
+            }
+
+            .location-summary .rsvp-stat:last-child {
+                border-right: 0;
+            }
+
             .flyer-section {
                 padding: 3rem 1rem;
             }
@@ -1139,6 +1156,34 @@
             transform: scale(1.05);
         }
 
+        .photo-upload {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1.25rem 1rem;
+            background: #eef6f1;
+            border-bottom: 1px solid #d5e5da;
+        }
+
+        .photo-upload input[type="text"] {
+            width: min(100%, 280px);
+            min-height: 44px;
+            padding: 0.65rem 0.8rem;
+            border: 1px solid #9eb8a7;
+            border-radius: 4px;
+            font: inherit;
+        }
+
+        .photo-upload-status {
+            flex-basis: 100%;
+            min-height: 1.5rem;
+            color: #52665a;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
         @keyframes scrollLeft {
             0% {
                 transform: translateX(0);
@@ -1200,6 +1245,13 @@
     <div class="carousel-section">
         <div class="carousel-track" aria-label="Family photo and video carousel"></div>
     </div>
+    <form class="photo-upload" id="photoUploadForm">
+        <label class="sr-only" for="photoSubmitter">Your name</label>
+        <input id="photoSubmitter" type="text" maxlength="80" placeholder="Your name" required>
+        <input class="sr-only" id="photoFile" type="file" accept="image/jpeg,image/png,image/webp" required>
+        <button class="action-button" id="choosePhoto" type="button">Upload a Family Photo</button>
+        <p class="photo-upload-status" id="photoUploadStatus" aria-live="polite">Photos are reviewed before being added to the carousel.</p>
+    </form>
 
     <!-- Main Content -->
     <div class="container">
@@ -1249,7 +1301,6 @@
                                 <th scope="col">Age 18 & Above</th>
                                 <th scope="col">Location</th>
                                 <th scope="col">Are You Coming?</th>
-                                <th scope="col"><span class="sr-only">Delete</span></th>
                             </tr>
                         </thead>
                         <tbody id="rsvpRows"></tbody>
@@ -1260,13 +1311,18 @@
                     <button class="action-button secondary" id="refreshRsvp" type="button">Refresh Shared List</button>
                     <button class="action-button secondary" id="downloadRsvp" type="button">Download Spreadsheet</button>
                 </div>
+                <div class="rsvp-summary location-summary" aria-label="Confirmed guests by location">
+                    <div class="rsvp-stat"><strong id="selectionPeople">0</strong><span>Staying at Selection</span></div>
+                    <div class="rsvp-stat"><strong id="wavesPeople">0</strong><span>Staying at Waves</span></div>
+                    <div class="rsvp-stat"><strong id="offsitePeople">0</strong><span>Staying Offsite</span></div>
+                </div>
                 <p class="tracker-note" id="saveStatus" aria-live="polite">Connecting to the shared RSVP spreadsheet...</p>
             </div>
 
             <div class="rsvp-tracker flight-tracker" id="flights">
                 <div class="flight-tracker-header">
                     <h3>Flight Information Tracker</h3>
-                    <p>Add one row for each group arriving or departing together. Families are linked to the RSVP list for accurate bus counts.</p>
+                    <p>Add your arrival and departure flights below. Use another pair when family members travel in separate groups.</p>
                 </div>
                 <div class="flight-summary" aria-label="Bus transportation summary">
                     <div class="flight-stat"><strong id="arrivalBusSeats">0</strong><span>Arrival Bus Seats</span></div>
@@ -1303,171 +1359,7 @@
 
         </section>
 
-        <!-- Resort Properties -->
-        <section class="fade-in">
-            <h2>Choose Your Resort Level</h2>
-            <p style="font-size: 1.2rem; margin-bottom: 2rem; color: #555;">Iberostar Rose Hall has 2 different
-                properties to fit every budget and preference. Select what works best for your family!</p>
-
-            <div class="properties-grid">
-
-                <!-- SELECTION - Family Mid-Level -->
-                <div class="property-card">
-                    <a href="https://www.iberostar.com/en/hotels/montego-bay/iberostar-selection-rose-hall-suites/"
-                        target="_blank" style="text-decoration: none; display: block;">
-                        <div class="property-header selection" style="cursor: pointer;">
-                            <h3>SELECTION</h3>
-                            <p class="level">Family Friendly • Mid-Level</p>
-                            <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9; font-weight: 600;">👆 Tap to
-                                view on Iberostar →</p>
-                        </div>
-                    </a>
-                    <div class="property-body">
-                        <p style="font-weight: 600; color: var(--ocean-deep); font-size: 1.15rem;">Great Balance of
-                            Quality & Value</p>
-                        <ul>
-                            <li>Family-friendly (all ages welcome)</li>
-                            <li>Excellent accommodations</li>
-                            <li>Multiple dining venues</li>
-                            <li>Full-service bars</li>
-                            <li>Kids clubs & activities</li>
-                            <li>Great amenities</li>
-                        </ul>
-                        <div class="access-info">ACCESS TO SELECTION + WAVES</div>
-                        <div class="price-highlight">Pricing TBA</div>
-                        <p style="margin-top: 1rem; text-align: center; color: #888; font-size: 0.95rem;">Perfect for
-                            families wanting comfort & value</p>
-                    </div>
-                </div>
-
-                <!-- WAVES - Most Economic -->
-                <div class="property-card">
-                    <a href="https://www.iberostar.com/en/hotels/montego-bay/iberostar-rose-hall-beach/" target="_blank"
-                        style="text-decoration: none; display: block;">
-                        <div class="property-header waves" style="cursor: pointer;">
-                            <h3>WAVES</h3>
-                            <p class="level">Family Friendly • Most Economic</p>
-                            <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9; font-weight: 600;">👆 Tap to
-                                view on Iberostar →</p>
-                        </div>
-                    </a>
-                    <div class="property-body">
-                        <p style="font-weight: 600; color: var(--ocean-deep); font-size: 1.15rem;">Budget-Friendly,
-                            Still All-Inclusive!</p>
-                        <ul>
-                            <li>Family-friendly (all ages welcome)</li>
-                            <li>Comfortable accommodations</li>
-                            <li>Multiple restaurants</li>
-                            <li>All-inclusive dining & drinks</li>
-                            <li>Kids activities</li>
-                            <li>Beach access</li>
-                        </ul>
-                        <div class="access-info">ACCESS TO WAVES ONLY</div>
-                        <div class="price-highlight">Pricing TBA</div>
-                        <p style="margin-top: 1rem; text-align: center; color: #888; font-size: 0.95rem;">Perfect for
-                            budget-conscious families</p>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
         <div class="wave-divider"></div>
-
-        <!-- Next Steps -->
-        <section class="action-steps fade-in">
-            <h2>📝 How to Book Your Room</h2>
-
-            <ul class="steps-list">
-                <li>
-                    <strong>CHOOSE YOUR PROPERTY</strong> - Decide between Selection or Waves based on your budget and
-                    preference
-                </li>
-                <li>
-                    <strong>SEND BOOKING INFO</strong> via email to <span
-                        style="color: var(--gold); font-size: 1.3rem;"><a href="mailto:revandrea124@gmail.com"
-                            style="color: var(--gold);">revandrea124@gmail.com</a></span><br>
-                    Include:<br>
-                    • Names of all persons in the room<br>
-                    • Full addresses<br>
-                    • Ages of all guests<br>
-                    • Payment info (if paying at booking)
-                </li>
-                <li>
-                    <strong>RECEIVE CONFIRMATION</strong> - You'll get your booking confirmation and room details
-                </li>
-                <li>
-                    <strong>BOOK YOUR FLIGHTS</strong> - Fly into Montego Bay (MBJ) - airport is only 15-20 minutes from
-                    resort!
-                </li>
-                <li>
-                    <strong>PACK YOUR BAGS</strong> - Get ready for an amazing family reunion in Jamaica! 🇯🇲
-                </li>
-            </ul>
-        </section>
-
-        <div class="wave-divider"></div>
-
-        <!-- Kellits Visit -->
-        <section class="fade-in" id="kellits">
-            <h2>Visiting Kellits from Montego Bay</h2>
-            <div class="info-card" style="max-width: 900px; margin: 0 auto; border-left-color: var(--jamaica-green);">
-                <h3>🇯🇲 Connecting with Our Roots</h3>
-                <p style="margin-bottom: 1rem;"><strong>Distance:</strong> Montego Bay to Kellits is approximately
-                    50-60 miles (80-95 km)</p>
-                <p style="margin-bottom: 1rem;"><strong>Drive Time:</strong> About 90 minutes each way</p>
-                <p style="margin-bottom: 1.5rem;"><strong>Our Plan:</strong> We'll arrange group transportation
-                    (buses/vans) so families can visit Kellits together. Spend the day with family and friends, enjoy
-                    authentic Jamaican food, and let the younger generation experience where we're from!</p>
-
-                <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #E0E0E0;">
-                    <p
-                        style="font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--palm-green); margin-bottom: 1.2rem;">
-                        🎉 Kellits Day Activities</p>
-                    <ul style="list-style: none; padding: 0;">
-                        <li style="padding: 0.7rem 0; border-bottom: 1px solid #eee; font-size: 1.05rem;">🎮
-                            <strong>Games</strong> — fun for all ages
-                        </li>
-                        <li style="padding: 0.7rem 0; border-bottom: 1px solid #eee; font-size: 1.05rem;">👨‍👩‍👧‍👦
-                            <strong>Family from across Jamaica</strong> — relatives from all over the island are invited
-                            to join us
-                        </li>
-                        <li style="padding: 0.7rem 0; border-bottom: 1px solid #eee; font-size: 1.05rem;">🎵
-                            <strong>Music</strong> — good vibes all day
-                        </li>
-                        <li style="padding: 0.7rem 0; border-bottom: 1px solid #eee; font-size: 1.05rem;">🔍
-                            <strong>History Scavenger Hunt</strong> — explore and learn our family history through a fun
-                            interactive hunt
-                        </li>
-                        <li style="padding: 0.7rem 0; font-size: 1.05rem;">🌳 <strong>Family Tree Step & Repeat</strong>
-                            — find your place on the family tree and mark it with your name sticker. A hands-on, visual
-                            way to show every generation where they belong!</li>
-                    </ul>
-                </div>
-
-                <div
-                    style="margin-top: 2rem; padding: 1.5rem; background: linear-gradient(135deg, rgba(0,155,58,0.08), rgba(0,168,150,0.08)); border-radius: 15px; border: 2px solid var(--tropical-teal);">
-                    <p
-                        style="font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; color: var(--ocean-deep); margin-bottom: 1rem;">
-                        📦 Coming Soon — Details to Follow</p>
-                    <ul style="list-style: none; padding: 0;">
-                        <li style="padding: 0.5rem 0; font-size: 1.05rem;">👕 <strong>Reunion T-Shirts</strong> — cost &
-                            ordering details coming soon</li>
-                        <li style="padding: 0.5rem 0; font-size: 1.05rem;">🎁 <strong>Keepsakes</strong> — something to
-                            remember the trip by</li>
-                        <li style="padding: 0.5rem 0; font-size: 1.05rem;">🚌 <strong>Bus to Kellits</strong> — group
-                            transportation cost details to follow</li>
-                        <li style="padding: 0.5rem 0; font-size: 1.05rem;">📖 <strong>Family Magazine</strong> — a
-                            printed magazine capturing our reunion story, delivered after the trip!</li>
-                    </ul>
-                    <p style="margin-top: 1rem; font-style: italic; color: #666; font-size: 0.95rem;">All details will
-                        be shared via WhatsApp group as plans are finalized.</p>
-                </div>
-            </div>
-        </section>
-
-
-
 
         <!-- Week's Agenda Section -->
         <section class="fade-in">
@@ -1538,19 +1430,19 @@
                 </div>
                 <div class="day-details">
                     <p><strong>Morning: Group trip to Kellits, Clarendon</strong></p>
-                    <p>Games, music, history scavenger hunt & family tree activity</p>
-                    <p>Family from across Jamaica joining us for the day</p>
+                    <p>Kellits is approximately 50-60 miles from Montego Bay, about a 90-minute drive each way</p>
+                    <p>Group transportation by bus or van will be arranged so we can travel together</p>
+                    <p>Connect with family from across Jamaica and introduce younger generations to where we're from</p>
+                    <p>Games, music, a family history scavenger hunt, and the Family Tree Step & Repeat</p>
                     <p>Authentic Jamaican food with local family</p>
-                    <p>Return to resort in afternoon</p>
-                    <p style="margin-top: 0.5rem;">👆 <a href="#kellits"
-                            style="color: var(--tropical-teal); font-weight: 600;">See full Kellits Day details
-                            above</a></p>
+                    <p>Return to the resort in the afternoon</p>
                     <p style="margin-top: 1.5rem;"><strong>Evening: THANKSGIVING CELEBRATION!</strong></p>
                     <p>Special Thanksgiving dinner at resort</p>
                     <p>Traditional turkey with Jamaican flair</p>
                     <p>Family gratitude circle and giving thanks</p>
-                    <p style="margin-top: 1rem; font-weight: 600; color: var(--jamaica-green);">📌 Transportation to
-                        Kellits details to be arranged. Those not going can enjoy resort day!</p>
+                    <p style="margin-top: 1rem; font-weight: 600; color: var(--jamaica-green);">📌 Transportation cost,
+                        T-shirt, keepsake, and other final details will be shared via WhatsApp. Those not going can enjoy
+                        a resort day.</p>
                     <p style="margin-top: 0.5rem; font-weight: 600; color: var(--coral-sunset);">🦃 Perfect day -
                         connecting with roots AND celebrating family!</p>
                 </div>
@@ -1566,7 +1458,7 @@
                 </div>
                 <div class="day-details">
                     <p><strong>Organized family activities</strong></p>
-                    <p>Beach games, family photo session</p>
+                    <p>Beach games and resort activities</p>
                     <p>Group activities and quality time together</p>
                     <p style="margin-top: 1rem; font-style: italic; color: #888;">(Specific activities and timing to be
                         added)</p>
@@ -1578,15 +1470,14 @@
                     <div class="day-number">DAY 6</div>
                     <div class="day-info">
                         <h3>Saturday, November 28</h3>
-                        <p class="day-title">CHILL DAY - Relax & Recover</p>
+                        <p class="day-title">FAREWELL DAY - Breakfast, Photos & Goodbyes</p>
                     </div>
                 </div>
                 <div class="day-details">
-                    <p><strong>No scheduled activities</strong></p>
-                    <p>Pure relaxation - beach, pool, spa, or explore on your own</p>
-                    <p>Free time to do whatever makes you happy!</p>
-                    <p style="margin-top: 1rem; font-style: italic; color: #888;">(This is YOUR day - enjoy at your own
-                        pace)</p>
+                    <p><strong>Final family breakfast together</strong></p>
+                    <p>Final group photos and family goodbyes</p>
+                    <p>Check-out and departures based on flight times</p>
+                    <p>Free time at the resort for family members staying through Sunday</p>
                 </div>
             </div>
 
@@ -1599,10 +1490,9 @@
                     </div>
                 </div>
                 <div class="day-details">
-                    <p><strong>Check-out: 12:00 PM (noon)</strong></p>
-                    <p>Final breakfast together</p>
-                    <p>Final group photos and goodbyes</p>
-                    <p>Departures throughout the day based on flight times</p>
+                    <p><strong>Departure day only - no formal activities planned</strong></p>
+                    <p>Check-out: 12:00 PM (noon)</p>
+                    <p>Remaining departures based on flight times</p>
                     <p style="margin-top: 1rem; font-weight: 600; color: var(--ocean-deep);">💚 Safe travels! See you at
                         the next reunion! 💛</p>
                 </div>
@@ -1834,12 +1724,12 @@
             }));
         }
 
-        function makeFlight() {
+        function makeFlight(direction = 'Arrival') {
             return {
                 id: '',
                 rsvpId: '',
                 familyName: '',
-                direction: 'Arrival',
+            direction,
                 dateTime: '',
                 airline: '',
                 flightNumber: '',
@@ -1871,7 +1761,6 @@
                     <td><input data-field="adults" type="number" value="${rsvp.adults}" min="0" step="1" inputmode="numeric" aria-label="Number age 18 and above"></td>
                     <td><select data-field="location" aria-label="Resort location"><option value="Selection"${rsvp.location === 'Selection' ? ' selected' : ''}>Selection</option><option value="Waves"${rsvp.location === 'Waves' ? ' selected' : ''}>Waves</option><option value="Offsite"${rsvp.location === 'Offsite' ? ' selected' : ''}>Offsite</option></select></td>
                     <td><select data-field="coming" aria-label="Are you coming"><option value="Yes"${rsvp.coming === 'Yes' ? ' selected' : ''}>Yes</option><option value="Unfortunately No"${rsvp.coming === 'Unfortunately No' ? ' selected' : ''}>Unfortunately No</option><option value="Will Know By 15 Sept"${rsvp.coming === 'Will Know By 15 Sept' ? ' selected' : ''}>Will Know By 15 Sept</option></select></td>
-                    <td><button class="delete-rsvp" type="button" aria-label="Delete ${escapeHtml(rsvp.familyName || 'family')} row">×</button></td>
                 </tr>`;
             }).join('');
 
@@ -1880,7 +1769,7 @@
 
         function renderFlightRows() {
             if (flights.length === 0) {
-                flights.push(makeFlight());
+                flights.push(makeFlight('Arrival'), makeFlight('Departure'));
             }
 
             const attendingFamilies = rsvps.filter(rsvp => rsvp.id && rsvp.familyName.trim() && rsvp.coming !== 'Unfortunately No');
@@ -1962,10 +1851,16 @@
             flightSaveStatus.textContent = 'Loading the shared flight spreadsheet...';
             try {
                 const result = await requestRsvp('listFlights');
-                flights = Array.isArray(result.flights) ? result.flights.flatMap(normalizeStoredFlight) : [];
+                const sharedFlights = Array.isArray(result.flights) ? result.flights.flatMap(normalizeStoredFlight) : [];
+                const localDrafts = flights.filter(flight => !flight.id && (
+                    flight.dateTime || flight.airline || flight.flightNumber
+                ));
+                flights = [...sharedFlights, ...localDrafts];
                 localStorage.setItem(flightStorageKey, JSON.stringify(flights));
                 renderFlightRows();
-                flightSaveStatus.textContent = 'Shared flight list is up to date. Changes save automatically for everyone.';
+                flightSaveStatus.textContent = localDrafts.length
+                    ? `Shared flight list is up to date. ${localDrafts.length} unsaved flight ${localDrafts.length === 1 ? 'draft was' : 'drafts were'} kept on this device.`
+                    : 'Shared flight list is up to date. Changes save automatically for everyone.';
             } catch (error) {
                 renderFlightRows();
                 flightSaveStatus.textContent = `Shared flight spreadsheet unavailable: ${error.message} Your changes will remain on this device.`;
@@ -2074,6 +1969,12 @@
             document.getElementById('comingPeople').textContent = sum('total');
             document.getElementById('comingChildren').textContent = sum('children');
             document.getElementById('comingAdults').textContent = sum('adults');
+            ['Selection', 'Waves', 'Offsite'].forEach(location => {
+                const total = coming
+                    .filter(rsvp => rsvp.location === location)
+                    .reduce((people, rsvp) => people + (Number(rsvp.total) || 0), 0);
+                document.getElementById(`${location.toLowerCase()}People`).textContent = total;
+            });
         }
 
         function updateRsvpFromField(event) {
@@ -2094,6 +1995,22 @@
             if (!field) return;
             const index = Number(event.target.closest('tr').dataset.index);
             const flight = flights[index];
+            if (field === 'direction' && flight.id && event.target.value !== flight.direction) {
+                const newFlight = {
+                    ...makeFlight(event.target.value),
+                    rsvpId: flight.rsvpId,
+                    familyName: flight.familyName,
+                    airport: flight.airport,
+                    travelers: flight.travelers,
+                    busNeeded: flight.busNeeded,
+                    location: flight.location
+                };
+                flights.splice(index + 1, 0, newFlight);
+                saveFlightsLocally(`${newFlight.direction} row added without changing the saved ${flight.direction.toLowerCase()} flight.`);
+                renderFlightRows();
+                flightRows.querySelector(`tr[data-index="${index + 1}"] [data-field="dateTime"]`).focus();
+                return;
+            }
             flight[field] = event.target.type === 'number'
                 ? Math.max(0, Number(event.target.value) || 0)
                 : event.target.value;
@@ -2148,31 +2065,58 @@
             updateRsvpFromField(event);
         });
 
-        rsvpRows.addEventListener('click', async event => {
-            const button = event.target.closest('.delete-rsvp');
-            if (!button) return;
-            const index = Number(button.closest('tr').dataset.index);
-            const [removed] = rsvps.splice(index, 1);
-            clearTimeout(saveTimers.get(removed));
-            saveTimers.delete(removed);
-            saveLocally('Removing family from the shared spreadsheet...');
-            renderRsvps();
-            const pendingSave = saveChains.get(removed);
-            if (pendingSave) await pendingSave;
-            if (!removed.id) {
-                saveStatus.textContent = 'Unsaved family row removed.';
+        const photoUploadForm = document.getElementById('photoUploadForm');
+        const photoFile = document.getElementById('photoFile');
+        const photoSubmitter = document.getElementById('photoSubmitter');
+        const photoUploadStatus = document.getElementById('photoUploadStatus');
+        const choosePhoto = document.getElementById('choosePhoto');
+        const allowedPhotoTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        const maxPhotoBytes = 8 * 1024 * 1024;
+
+        choosePhoto.addEventListener('click', () => {
+            if (!photoSubmitter.reportValidity()) return;
+            photoFile.click();
+        });
+
+        photoFile.addEventListener('change', () => {
+            if (photoFile.files.length > 0) photoUploadForm.requestSubmit();
+        });
+
+        photoUploadForm.addEventListener('submit', async event => {
+            event.preventDefault();
+            const file = photoFile.files[0];
+            if (!file || !allowedPhotoTypes.includes(file.type)) {
+                photoUploadStatus.textContent = 'Choose a JPG, PNG, or WebP image.';
                 return;
             }
+            if (file.size > maxPhotoBytes) {
+                photoUploadStatus.textContent = 'Choose an image smaller than 8 MB.';
+                return;
+            }
+
+            choosePhoto.disabled = true;
+            photoUploadStatus.textContent = 'Uploading photo for review...';
             try {
-                const result = await requestRsvp('delete', { id: removed.id });
-                saveChains.delete(removed);
-                saveStatus.textContent = result.archived
-                    ? 'Family moved to the RSVP recovery archive.'
-                    : 'Family removed from the shared RSVP spreadsheet.';
+                const data = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(String(reader.result).split(',')[1]);
+                    reader.onerror = () => reject(new Error('The selected photo could not be read.'));
+                    reader.readAsDataURL(file);
+                });
+                await requestRsvp('submitPhoto', {
+                    photo: {
+                        submitter: photoSubmitter.value.trim(),
+                        fileName: file.name,
+                        mimeType: file.type,
+                        data
+                    }
+                });
+                photoUploadForm.reset();
+                photoUploadStatus.textContent = 'Photo submitted. You will see it after it has been reviewed.';
             } catch (error) {
-                rsvps.splice(index, 0, removed);
-                saveLocally(`Could not delete: ${error.message}`);
-                renderRsvps();
+                photoUploadStatus.textContent = `Photo upload failed: ${error.message}`;
+            } finally {
+                choosePhoto.disabled = false;
             }
         });
 
@@ -2185,7 +2129,7 @@
 
         document.getElementById('addFlightFamily').addEventListener('click', () => {
             flights.push(makeFlight());
-            saveFlightsLocally('New group added. Select an RSVP family and enter the flight time to save it.');
+            saveFlightsLocally('New flight group added. Select an RSVP family, direction, and flight time to save it.');
             renderFlightRows();
             flightRows.querySelector('tr:last-child select').focus();
         });

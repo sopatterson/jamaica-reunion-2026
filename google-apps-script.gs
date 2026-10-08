@@ -3,6 +3,10 @@ const SHEET_NAME = 'RSVP';
 const ARCHIVE_SHEET_NAME = 'RSVP Archive';
 const FLIGHT_SHEET_NAME = 'Flights';
 const FLIGHT_ARCHIVE_SHEET_NAME = 'Flight Archive';
+const PHOTO_REVIEW_EMAIL = 'mrpatterson@gmail.com';
+const PHOTO_UPLOAD_FOLDER_NAME = 'Pending Jamaica Reunion Photos';
+const PHOTO_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
+const PHOTO_UPLOAD_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const HEADERS = [
   'ID',
@@ -138,11 +142,6 @@ function doPost(event) {
       });
     }
 
-    if (request.action === 'delete') {
-      deleteRsvp(request.id);
-      return jsonResponse({ success: true, id: request.id, archived: true });
-    }
-
     if (request.action === 'upsertFlight') {
       return jsonResponse({
         success: true,
@@ -153,6 +152,13 @@ function doPost(event) {
     if (request.action === 'deleteFlight') {
       deleteFlight(request.id);
       return jsonResponse({ success: true, id: request.id, archived: true });
+    }
+
+    if (request.action === 'submitPhoto') {
+      return jsonResponse({
+        success: true,
+        photo: submitPhotoForReview(request.photo)
+      });
     }
 
     return jsonResponse({ success: false, error: 'Unknown POST action.' });
@@ -183,6 +189,65 @@ function getRsvps() {
       coming: normalizeOption(row[5], ATTENDANCE_OPTIONS, 'Yes'),
       location: normalizeOption(row[6], LOCATION_OPTIONS, 'Selection')
     }));
+}
+
+function submitPhotoForReview(photo) {
+  if (!photo || typeof photo !== 'object') {
+    throw new Error('Photo data is required.');
+  }
+
+  const submitter = sanitizeText(photo.submitter).trim();
+  const fileName = sanitizeText(photo.fileName).trim();
+  const mimeType = String(photo.mimeType || '').trim().toLowerCase();
+  const encodedData = String(photo.data || '');
+  if (!submitter) {
+    throw new Error('Your name is required.');
+  }
+  if (!fileName || !PHOTO_UPLOAD_TYPES.includes(mimeType)) {
+    throw new Error('Choose a JPG, PNG, or WebP image.');
+  }
+
+  const bytes = Utilities.base64Decode(encodedData);
+  if (bytes.length === 0 || bytes.length > PHOTO_UPLOAD_MAX_BYTES) {
+    throw new Error('The photo must be smaller than 8 MB.');
+  }
+
+  const folderIterator = DriveApp.getFoldersByName(PHOTO_UPLOAD_FOLDER_NAME);
+  const folder = folderIterator.hasNext() ? folderIterator.next() : DriveApp.createFolder(PHOTO_UPLOAD_FOLDER_NAME);
+  const safeFileName = fileName.replace(/[^a-zA-Z0-9._ -]/g, '_');
+  const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmmss');
+  const file = folder.createFile(Utilities.newBlob(bytes, mimeType, timestamp + '-' + safeFileName));
+  file.setDescription('Submitted by ' + submitter + ' for review before adding to the Jamaica Reunion carousel.');
+
+  const subject = 'Jamaica Reunion photo awaiting review';
+  const body = [
+    submitter + ' submitted a family photo for the reunion carousel.',
+    '',
+    'Original file: ' + fileName,
+    'Review photo: ' + file.getUrl(),
+    '',
+    'The photo has not been added to the website.'
+  ].join('\n');
+  MailApp.sendEmail({
+    to: PHOTO_REVIEW_EMAIL,
+    subject,
+    body,
+    htmlBody: '<p><strong>' + escapeHtmlForEmail(submitter) + '</strong> submitted a family photo for the reunion carousel.</p>' +
+      '<p>Original file: ' + escapeHtmlForEmail(fileName) + '</p>' +
+      '<p><a href="' + file.getUrl() + '">Review the photo in Google Drive</a></p>' +
+      '<p>The photo has not been added to the website.</p>'
+  });
+
+  return { submitted: true };
+}
+
+function escapeHtmlForEmail(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function upsertRsvp(rsvp) {
