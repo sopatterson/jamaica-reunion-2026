@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Printable one-page agenda for the Jamaica Family Reunion 2026.">
+    <title>Jamaica Family Reunion 2026 | One-Page Agenda</title>
+    <style>
+        :root {
+            --forest: #003f24;
+            --green: #087a3c;
+            --gold: #d8a514;
+            --sun: #f5ca3d;
+            --cream: #fff9df;
+            --ink: #173326;
+            --coral: #d85f43;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+            background: #d9d4c2;
+            color: var(--ink);
+            font-family: "Trebuchet MS", "Avenir Next", sans-serif;
+        }
+
+        body {
+            padding: 24px;
+        }
+
+        .sheet {
+            position: relative;
+            display: grid;
+            grid-template-rows: 1.82in 1fr 0.9in;
+            width: 8.5in;
+            min-height: 11in;
+            margin: 0 auto;
+            overflow: hidden;
+            background:
+                linear-gradient(rgba(255, 249, 223, 0.96), rgba(255, 249, 223, 0.96)),
+                url("images/Jamaica Reunion Flyer 4.jpg") center / cover;
+            box-shadow: 0 14px 50px rgba(18, 36, 27, 0.24);
+        }
+
+        .masthead {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            padding: 0.25in 0.48in 0.22in;
+            overflow: hidden;
+            color: white;
+            background:
+                linear-gradient(90deg, rgba(0, 45, 25, 0.95) 0%, rgba(0, 63, 36, 0.8) 48%, rgba(0, 63, 36, 0.18) 100%),
+                url("images/Jamaica Reunion Flyer 4.jpg") center 22% / cover;
+            border-bottom: 0.12in solid var(--sun);
+        }
+
+        .masthead::after {
+            content: "";
+            position: absolute;
+            right: -0.55in;
+            bottom: -0.72in;
+            width: 2.65in;
+            height: 1.45in;
+            border: 0.08in solid rgba(245, 202, 61, 0.7);
+            border-radius: 50%;
+            transform: rotate(-11deg);
+        }
+
+        .eyebrow,
+        .dates,
+        .day-label,
+        .scan-copy strong {
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .eyebrow {
+            margin: 0 0 0.03in;
+            color: var(--sun);
+            font-size: 10pt;
+            font-weight: 800;
+        }
+
+        h1 {
+            max-width: 5.7in;
+            margin: 0;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 28pt;
+            line-height: 0.94;
+            letter-spacing: 0;
+        }
+
+        .dates {
+            margin: 0.11in 0 0;
+            font-size: 11pt;
+            font-weight: 800;
+        }
+
+        .agenda {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: repeat(4, minmax(0, 1fr));
+            gap: 0.08in 0.12in;
+            padding: 0.16in 0.42in 0.12in;
+            min-height: 0;
+        }
+
+        .day {
+            display: grid;
+            grid-template-columns: 0.58in 1fr;
+            min-height: 0;
+            overflow: hidden;
+            border-top: 2px solid rgba(0, 63, 36, 0.2);
+        }
+
+        .day:first-child,
+        .day:nth-child(2) {
+            border-top: 0;
+        }
+
+        .day.kellits {
+            grid-row: span 2;
+            color: #fffceb;
+            background: var(--forest);
+            border: 0;
+        }
+
+        .day-label {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0.05in;
+            color: white;
+            background: var(--green);
+            font-size: 7.8pt;
+            font-weight: 900;
+            line-height: 1.05;
+            text-align: center;
+        }
+
+        .day-label span {
+            margin-top: 0.03in;
+            color: var(--sun);
+            font-size: 15pt;
+            letter-spacing: 0;
+        }
+
+        .day-copy {
+            padding: 0.07in 0.09in 0.05in 0.1in;
+            min-width: 0;
+        }
+
+        .day h2 {
+            margin: 0;
+            color: var(--forest);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 11.2pt;
+            line-height: 1.05;
+            letter-spacing: 0;
+        }
+
+        .day.kellits h2 {
+            color: var(--sun);
+        }
+
+        .day h3 {
+            margin: 0.025in 0 0.035in;
+            color: var(--coral);
+            font-size: 7.7pt;
+            line-height: 1.1;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .day.kellits h3 {
+            color: #fff;
+        }
+
+        .details {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-size: 7.35pt;
+            line-height: 1.18;
+        }
+
+        .details li {
+            position: relative;
+            margin: 0 0 0.018in;
+            padding-left: 0.11in;
+        }
+
+        .details li::before {
+            content: "";
+            position: absolute;
+            top: 0.34em;
+            left: 0;
+            width: 0.045in;
+            height: 0.045in;
+            background: var(--gold);
+            transform: rotate(45deg);
+        }
+
+        .footer {
+            display: grid;
+            grid-template-columns: 1fr 0.71in;
+            gap: 0.18in;
+            align-items: center;
+            padding: 0.08in 0.42in 0.1in;
+            color: white;
+            background: var(--forest);
+            border-top: 0.08in solid var(--sun);
+        }
+
+        .tagline {
+            margin: 0 0 0.045in;
+            color: var(--sun);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 11.5pt;
+            font-style: italic;
+            font-weight: 700;
+        }
+
+        .scan-copy {
+            margin: 0;
+            font-size: 8pt;
+            line-height: 1.25;
+        }
+
+        .scan-copy strong {
+            color: var(--sun);
+        }
+
+        .url {
+            display: block;
+            margin-top: 0.025in;
+            color: white;
+            font-size: 7pt;
+        }
+
+        .qr {
+            display: block;
+            width: 0.71in;
+            height: 0.71in;
+            padding: 0.025in;
+            background: var(--cream);
+        }
+
+        .sync-status {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1px;
+            height: 1px;
+            margin: 0;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+        }
+
+        .sheet.compact .details {
+            font-size: 6.9pt;
+            line-height: 1.12;
+        }
+
+        .sheet.compact .day-copy {
+            padding-top: 0.055in;
+            padding-bottom: 0.035in;
+        }
+
+        .sheet.extra-compact .details {
+            font-size: 6.65pt;
+            line-height: 1.08;
+        }
+
+        .sheet.extra-compact .day h2 {
+            font-size: 10.4pt;
+        }
+
+        @media screen and (max-width: 900px) {
+            body {
+                padding: 0;
+                background: var(--cream);
+            }
+
+            .sheet {
+                width: 100%;
+                min-width: 700px;
+                box-shadow: none;
+                transform-origin: top left;
+            }
+        }
+
+        @page {
+            size: Letter portrait;
+            margin: 0;
+        }
+
+        @media print {
+            html,
+            body {
+                width: 8.5in;
+                height: 11in;
+                background: white;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+
+            body {
+                padding: 0;
+            }
+
+            .sheet {
+                width: 8.5in;
+                height: 11in;
+                min-height: 11in;
+                box-shadow: none;
+                break-after: avoid;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="sheet" id="agendaSheet">
+        <header class="masthead">
+            <div>
+                <p class="eyebrow">Different Branches · One Tree · One Family</p>
+                <h1>Jamaica Family Reunion</h1>
+                <p class="dates">November 23-29, 2026 · Montego Bay & Kellits</p>
+            </div>
+        </header>
+
+        <section class="agenda" id="agenda" aria-label="Week's agenda">
+            <article class="day" data-day="1">
+                <div class="day-label">Day <span>1</span></div>
+                <div class="day-copy">
+                    <h2>Monday, November 23</h2>
+                    <h3>Arrival Day - Welcome to Paradise!</h3>
+                    <ul class="details">
+                        <li>Arrive at Montego Bay Airport (MBJ)</li>
+                        <li>Check-in at Iberostar Rose Hall at 3:00 PM</li>
+                        <li>Family reunion T-shirts distributed</li>
+                        <li>Welcome dinner and family meet & greet</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="day" data-day="2">
+                <div class="day-label">Day <span>2</span></div>
+                <div class="day-copy">
+                    <h2>Tuesday, November 24</h2>
+                    <h3>Resort Day - Beach, Pool & Relaxation</h3>
+                    <ul class="details">
+                        <li>Enjoy the beach, pools, water sports, and kids clubs</li>
+                        <li>Explore resort restaurants and bars</li>
+                        <li>Resort entertainment in the evening</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="day" data-day="3">
+                <div class="day-label">Day <span>3</span></div>
+                <div class="day-copy">
+                    <h2>Wednesday, November 25</h2>
+                    <h3>Adventure Day</h3>
+                    <ul class="details">
+                        <li>Optional excursions or resort activities</li>
+                        <li>Dunn's River Falls, Montego Bay shopping, or resort time</li>
+                        <li>Group dinner in the evening</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="day kellits" data-day="4">
+                <div class="day-label">Day <span>4</span></div>
+                <div class="day-copy">
+                    <h2>Thursday, November 26</h2>
+                    <h3>Kellits Day - Connecting With Our Roots</h3>
+                    <ul class="details">
+                        <li>Breakfast at the hotel</li>
+                        <li>Depart from the resort by 7:30 AM</li>
+                        <li>Approximately 3.5 hours each way; group transportation arranged</li>
+                        <li>Core activities from 11:00 AM-5:00 PM</li>
+                        <li>Connect with family from across Jamaica</li>
+                        <li>Games, music, family history scavenger hunt, and Family Tree Step & Repeat</li>
+                        <li>Authentic Jamaican food with local family for an early dinner</li>
+                        <li>Return to the resort after the day's activities</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="day" data-day="5">
+                <div class="day-label">Day <span>5</span></div>
+                <div class="day-copy">
+                    <h2>Friday, November 27</h2>
+                    <h3>Family Beach Day</h3>
+                    <ul class="details">
+                        <li>Local beach day in Montego Bay with family</li>
+                        <li>Beach games, group activities, and quality time together</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="day" data-day="6">
+                <div class="day-label">Day <span>6</span></div>
+                <div class="day-copy">
+                    <h2>Saturday, November 28</h2>
+                    <h3>Farewell Day - Breakfast, Photos & Goodbyes</h3>
+                    <ul class="details">
+                        <li>Final family breakfast and group photos</li>
+                        <li>Goodbyes and departures based on flight times</li>
+                        <li>Resort time for family staying through Sunday</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="day" data-day="7">
+                <div class="day-label">Day <span>7</span></div>
+                <div class="day-copy">
+                    <h2>Sunday, November 29</h2>
+                    <h3>Departure Day - Until Next Time!</h3>
+                    <ul class="details">
+                        <li>No formal activities planned</li>
+                        <li>Check-out at 12:00 PM; departures based on flight times</li>
+                        <li>Safe travels!</li>
+                    </ul>
+                </div>
+            </article>
+        </section>
+
+        <footer class="footer">
+            <div>
+                <p class="tagline">Honoring our roots. Celebrating our heritage. Building our legacy.</p>
+                <p class="scan-copy"><strong>Scan for the latest schedule, updates & flight tracker</strong>
+                    <span class="url">sopatterson.github.io/jamaica-reunion-2026</span>
+                </p>
+            </div>
+            <img class="qr" src="images/generated/reunion-website-qr.png"
+                alt="QR code linking to the Jamaica Family Reunion website">
+        </footer>
+        <p class="sync-status" id="syncStatus" aria-live="polite">Using the printable agenda.</p>
+    </main>
+
+    <script>
+        const sourceAgendaUrl = 'index.html';
+
+        function cleanDetail(text) {
+            return text.replace(/^📌\s*|^[💚💛]\s*|[💚💛]$/gu, '').replace(/\s+/g, ' ').trim();
+        }
+
+        function fitAgendaToPage() {
+            const sheet = document.getElementById('agendaSheet');
+            sheet.classList.remove('compact', 'extra-compact');
+            if (sheet.scrollHeight > sheet.clientHeight) sheet.classList.add('compact');
+            if (sheet.scrollHeight > sheet.clientHeight) sheet.classList.add('extra-compact');
+        }
+
+        async function syncAgendaFromWebsite() {
+            if (window.location.protocol === 'file:') {
+                fitAgendaToPage();
+                return;
+            }
+
+            try {
+                const response = await fetch(`${sourceAgendaUrl}?agenda=${Date.now()}`, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`Agenda request failed with ${response.status}`);
+                const source = new DOMParser().parseFromString(await response.text(), 'text/html');
+                const sourceDays = [...source.querySelectorAll('.agenda-day')].slice(0, 7);
+                if (sourceDays.length !== 7) throw new Error('Expected seven agenda days');
+
+                sourceDays.forEach((sourceDay, index) => {
+                    const targetDay = document.querySelector(`[data-day="${index + 1}"]`);
+                    const date = sourceDay.querySelector('h3')?.textContent.trim();
+                    const title = sourceDay.querySelector('.day-title')?.textContent
+                        .replace(/[🇯🇲]/gu, '')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    const details = [...sourceDay.querySelectorAll('.day-details > p')]
+                        .map(paragraph => cleanDetail(paragraph.textContent))
+                        .filter(detail => detail && !/^\(Specific .+ added\)$/i.test(detail));
+
+                    if (date) targetDay.querySelector('h2').textContent = date;
+                    if (title) targetDay.querySelector('h3').textContent = title;
+                    if (details.length) {
+                        const list = targetDay.querySelector('.details');
+                        list.replaceChildren(...details.map(detail => {
+                            const item = document.createElement('li');
+                            item.textContent = detail;
+                            return item;
+                        }));
+                    }
+                });
+
+                document.getElementById('syncStatus').textContent = 'Agenda synchronized with the reunion website.';
+            } catch (error) {
+                console.warn('Using the embedded printable agenda:', error);
+            } finally {
+                requestAnimationFrame(fitAgendaToPage);
+            }
+        }
+
+        window.addEventListener('load', syncAgendaFromWebsite);
+        window.addEventListener('beforeprint', fitAgendaToPage);
+    </script>
+</body>
+
+</html>
