@@ -37,7 +37,7 @@
         .sheet {
             position: relative;
             display: grid;
-            grid-template-rows: 1.82in 1fr 0.9in;
+            grid-template-rows: 1.5in 1fr 0.9in;
             width: 8.5in;
             min-height: 11in;
             margin: 0 auto;
@@ -52,7 +52,7 @@
             position: relative;
             display: flex;
             align-items: flex-end;
-            padding: 0.25in 0.48in 0.22in;
+            padding: 0.16in 0.42in 0.14in;
             overflow: hidden;
             color: white;
             background:
@@ -92,7 +92,7 @@
             max-width: 5.7in;
             margin: 0;
             font-family: Georgia, "Times New Roman", serif;
-            font-size: 28pt;
+            font-size: 27pt;
             line-height: 0.94;
             letter-spacing: 0;
         }
@@ -105,42 +105,40 @@
 
         .agenda {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: repeat(4, minmax(0, 1fr));
-            gap: 0.08in 0.12in;
-            padding: 0.16in 0.42in 0.12in;
+            grid-template-columns: 1fr;
+            grid-template-rows: repeat(7, minmax(0, auto));
+            gap: 0;
+            padding: 0.1in 0.34in 0.08in;
             min-height: 0;
         }
 
         .day {
             display: grid;
-            grid-template-columns: 0.58in 1fr;
+            grid-template-columns: 0.62in 1.82in 1fr;
             min-height: 0;
             overflow: hidden;
             border-top: 2px solid rgba(0, 63, 36, 0.2);
         }
 
-        .day:first-child,
-        .day:nth-child(2) {
+        .day:first-child {
             border-top: 0;
         }
 
         .day.kellits {
-            grid-row: span 2;
-            color: #fffceb;
-            background: var(--forest);
-            border: 0;
+            color: inherit;
+            background: transparent;
         }
 
         .day-label {
             display: flex;
+            grid-row: 1 / span 2;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 0.05in;
             color: white;
             background: var(--green);
-            font-size: 8.5pt;
+            font-size: 9pt;
             font-weight: 900;
             line-height: 1.05;
             text-align: center;
@@ -149,64 +147,83 @@
         .day-label span {
             margin-top: 0.03in;
             color: var(--sun);
-            font-size: 16pt;
+            font-size: 17pt;
             letter-spacing: 0;
         }
 
         .day-copy {
-            padding: 0.07in 0.09in 0.05in 0.1in;
+            display: contents;
             min-width: 0;
         }
 
         .day h2 {
+            align-self: center;
             margin: 0;
+            padding: 0.055in 0.08in 0.045in 0.12in;
             color: var(--forest);
             font-family: Georgia, "Times New Roman", serif;
-            font-size: 12.2pt;
+            font-size: 13.5pt;
             line-height: 1.05;
             letter-spacing: 0;
         }
 
         .day.kellits h2 {
-            color: var(--sun);
+            color: var(--forest);
         }
 
         .day h3 {
-            margin: 0.025in 0 0.035in;
+            grid-column: 2;
+            align-self: end;
+            margin: 0;
+            padding: 0 0.08in 0.05in 0.12in;
             color: var(--coral);
-            font-size: 8.4pt;
+            font-size: 9.3pt;
             line-height: 1.1;
             letter-spacing: 0.02em;
             text-transform: uppercase;
         }
 
         .day.kellits h3 {
-            color: #fff;
+            color: var(--coral);
         }
 
         .details {
+            grid-column: 3;
+            grid-row: 1 / span 2;
+            align-self: center;
             margin: 0;
-            padding: 0;
+            padding: 0.045in 0.02in 0.035in 0.08in;
             list-style: none;
-            font-size: 8pt;
-            line-height: 1.16;
+            font-size: 10pt;
+            line-height: 1.2;
+        }
+
+        .day.kellits .details {
+            columns: auto;
         }
 
         .details li {
             position: relative;
-            margin: 0 0 0.018in;
-            padding-left: 0.11in;
+            display: block;
+            margin: 0 0 0.015in;
+            padding-left: 0.12in;
+            break-inside: avoid;
         }
 
         .details li::before {
             content: "";
             position: absolute;
             top: 0.34em;
-            left: 0;
+            left: 0.015in;
             width: 0.045in;
             height: 0.045in;
             background: var(--gold);
             transform: rotate(45deg);
+        }
+
+        .details .time-boundary {
+            color: var(--forest);
+            font-weight: 800;
         }
 
         .footer {
@@ -214,7 +231,7 @@
             grid-template-columns: 1fr 0.71in;
             gap: 0.18in;
             align-items: center;
-            padding: 0.08in 0.42in 0.1in;
+            padding: 0.06in 0.34in 0.08in;
             color: white;
             background: var(--forest);
             border-top: 0.08in solid var(--sun);
@@ -266,17 +283,16 @@
         }
 
         .sheet.compact .details {
-            font-size: 7.55pt;
+            font-size: 8.9pt;
             line-height: 1.12;
         }
 
-        .sheet.compact .day-copy {
-            padding-top: 0.055in;
-            padding-bottom: 0.035in;
+        .sheet.compact .day h2 {
+            font-size: 12.6pt;
         }
 
         .sheet.extra-compact .details {
-            font-size: 7.2pt;
+            font-size: 8.5pt;
             line-height: 1.08;
         }
 
@@ -386,14 +402,12 @@
                     <h2>Thursday, November 26</h2>
                     <h3>Kellits Day - Connecting With Our Roots</h3>
                     <ul class="details">
-                        <li>Breakfast at the hotel</li>
-                        <li>Depart from the resort by 7:30 AM</li>
-                        <li>Approximately 3.5 hours each way; group transportation arranged</li>
-                        <li>Core activities from 11:00 AM-5:00 PM</li>
-                        <li>Connect with family from across Jamaica</li>
-                        <li>Games, music, family history scavenger hunt, and Family Tree Step & Repeat</li>
-                        <li>Authentic Jamaican food with local family for an early dinner</li>
-                        <li>Return to the resort after the day's activities</li>
+                        <li class="time-boundary">7:30 AM - Depart resort after breakfast</li>
+                        <li>3.5-hour drive each way with group transportation</li>
+                        <li>11:00 AM - Activities begin</li>
+                        <li>Family, games, music, history & photos</li>
+                        <li>Early dinner with authentic Jamaican food</li>
+                        <li class="time-boundary">5:00 PM - Activities end; return to resort</li>
                     </ul>
                 </div>
             </article>
@@ -457,6 +471,26 @@
             return text.replace(/^📌\s*|^[💚💛]\s*|[💚💛]$/gu, '').replace(/\s+/g, ' ').trim();
         }
 
+        function summarizeKellits(details) {
+            const departure = details.find(detail => /^Depart from/i.test(detail)) || '';
+            const departureTime = departure.match(/\b\d{1,2}:\d{2}\s*[AP]M\b/i)?.[0] || '7:30 AM';
+            const drive = details.find(detail => /^Kellits is approximately/i.test(detail)) || '';
+            const driveTime = drive.match(/\b\d+(?:\.\d+)?-hour\b/i)?.[0] || '3.5-hour';
+            const coreTime = details.find(detail => /^Core activities:/i.test(detail)) || '';
+            const activityTimes = coreTime.match(/(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i);
+            const startTime = activityTimes?.[1] || '11:00 AM';
+            const endTime = activityTimes?.[2] || '5:00 PM';
+
+            return [
+                `${departureTime} - Depart resort after breakfast`,
+                `${driveTime} drive each way with group transportation`,
+                `${startTime} - Activities begin`,
+                'Family, games, music, history & photos',
+                'Early dinner with authentic Jamaican food',
+                `${endTime} - Activities end; return to resort`
+            ];
+        }
+
         function fitAgendaToPage() {
             const sheet = document.getElementById('agendaSheet');
             sheet.classList.remove('compact', 'extra-compact');
@@ -488,6 +522,10 @@
                         .map(paragraph => cleanDetail(paragraph.textContent))
                         .filter(detail => detail && !/^\(Specific .+ added\)$/i.test(detail));
 
+                    if (index === 3) {
+                        details.splice(0, details.length, ...summarizeKellits(details));
+                    }
+
                     if (date) targetDay.querySelector('h2').textContent = date;
                     if (title) targetDay.querySelector('h3').textContent = title;
                     if (details.length) {
@@ -495,6 +533,7 @@
                         list.replaceChildren(...details.map(detail => {
                             const item = document.createElement('li');
                             item.textContent = detail;
+                            if (/^(7:30 AM|5:00 PM)/.test(detail)) item.className = 'time-boundary';
                             return item;
                         }));
                     }
