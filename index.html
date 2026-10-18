@@ -650,15 +650,44 @@
         }
 
         .flight-table {
-            min-width: 1500px;
+            min-width: 1320px;
         }
 
-        .flight-table td:first-child {
-            min-width: 210px;
+        .flight-table .family-cell {
+            min-width: 180px;
+            color: var(--palm-green);
+            background: #f2f7f3;
+            border-right: 1px solid #d7e3db;
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem;
+            vertical-align: top;
+        }
+
+        .flight-table .family-cell span,
+        .flight-table .leg-label {
+            display: block;
+            color: #66766d;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .flight-table .family-cell span {
+            margin-top: 0.3rem;
+        }
+
+        .flight-table .leg-label {
+            min-width: 82px;
+            background: #fbfcfb;
         }
 
         .flight-table td:nth-child(3) {
             min-width: 190px;
+        }
+
+        .flight-table tr.family-start > * {
+            border-top: 2px solid #c9d9ce;
         }
 
         .flight-table .readonly-value {
@@ -1311,7 +1340,7 @@
             <div class="rsvp-tracker flight-tracker" id="flights">
                 <div class="flight-tracker-header">
                     <h3>Flight Information Tracker</h3>
-                    <p>Add your arrival and departure flights below. Use another pair when family members travel in separate groups.</p>
+                    <p>Each attending family has a fixed arrival row and departure row. Add or update the flight details in place.</p>
                 </div>
                 <div class="flight-summary" aria-label="Bus transportation summary">
                     <div class="flight-stat"><strong id="arrivalBusSeats">0</strong><span>Arrival Bus Seats</span></div>
@@ -1337,7 +1366,6 @@
                     </table>
                 </div>
                 <div class="rsvp-actions">
-                    <button class="action-button" id="addFlightFamily" type="button">+ Add Flight Group</button>
                     <button class="action-button secondary" id="refreshFlights" type="button">Refresh Shared List</button>
                     <button class="action-button secondary" id="downloadFlights" type="button">Download Flight List</button>
                     <button class="action-button secondary" id="downloadBusPlan" type="button">Download Bus Plan</button>
@@ -1727,19 +1755,19 @@
             }));
         }
 
-        function makeFlight(direction = 'Arrival') {
+        function makeFlight(direction = 'Arrival', rsvp = null) {
             return {
                 id: '',
-                rsvpId: '',
-                familyName: '',
-            direction,
+                rsvpId: rsvp?.id || '',
+                familyName: rsvp?.familyName || '',
+                direction,
                 dateTime: '',
                 airline: '',
                 flightNumber: '',
                 airport: 'MBJ',
-                travelers: 0,
+                travelers: Number(rsvp?.total) || 0,
                 busNeeded: 'Yes',
-                location: ''
+                location: rsvp?.location || ''
             };
         }
 
@@ -1771,29 +1799,31 @@
         }
 
         function renderFlightRows() {
-            if (flights.length === 0) {
-                flights.push(makeFlight('Arrival'), makeFlight('Departure'));
-            }
-
             const attendingFamilies = rsvps.filter(rsvp => rsvp.id && rsvp.familyName.trim() && rsvp.coming !== 'Unfortunately No');
-            flightRows.innerHTML = flights.map((flight, index) => {
-                const familyOptions = attendingFamilies.map(rsvp => `<option value="${escapeHtml(rsvp.id)}"${flight.rsvpId === rsvp.id ? ' selected' : ''}>${escapeHtml(rsvp.familyName)} (${rsvp.total})</option>`).join('');
-                const missingFamilyOption = flight.rsvpId && !attendingFamilies.some(rsvp => rsvp.id === flight.rsvpId)
-                    ? `<option value="${escapeHtml(flight.rsvpId)}" selected>${escapeHtml(flight.familyName || 'Unavailable RSVP')}</option>`
-                    : '';
+            attendingFamilies.forEach(rsvp => {
+                ['Arrival', 'Departure'].forEach(direction => {
+                    if (!flights.some(flight => flight.rsvpId === rsvp.id && flight.direction === direction)) {
+                        flights.push(makeFlight(direction, rsvp));
+                    }
+                });
+            });
+
+            flightRows.innerHTML = attendingFamilies.map(rsvp => ['Arrival', 'Departure'].map((direction, legIndex) => {
+                const flight = flights.find(entry => entry.rsvpId === rsvp.id && entry.direction === direction);
+                const index = flights.indexOf(flight);
                 return `
-                <tr data-index="${index}">
-                    <td><select data-field="rsvpId" aria-label="RSVP family"><option value="">Select RSVP family</option>${missingFamilyOption}${familyOptions}</select></td>
-                    <td><select data-field="direction" aria-label="Flight direction"><option value="Arrival"${flight.direction === 'Arrival' ? ' selected' : ''}>Arrival</option><option value="Departure"${flight.direction === 'Departure' ? ' selected' : ''}>Departure</option></select></td>
+                <tr data-index="${index}"${legIndex === 0 ? ' class="family-start"' : ''}>
+                    ${legIndex === 0 ? `<th class="family-cell" scope="rowgroup" rowspan="2">${escapeHtml(rsvp.familyName)}<span>${rsvp.total} traveler${Number(rsvp.total) === 1 ? '' : 's'} - ${escapeHtml(rsvp.location)}</span></th>` : ''}
+                    <th class="leg-label" scope="row">${direction}</th>
                     <td><input data-field="dateTime" type="datetime-local" value="${escapeHtml(flight.dateTime || '')}" aria-label="${escapeHtml(flight.direction)} day and time for ${escapeHtml(flight.familyName || 'family')}"></td>
                     <td><input data-field="airline" type="text" value="${escapeHtml(flight.airline || '')}" aria-label="Airline" placeholder="e.g. JetBlue"></td>
                     <td><input data-field="flightNumber" type="text" value="${escapeHtml(flight.flightNumber || '')}" aria-label="Flight number" placeholder="e.g. B61217"></td>
                     <td><input data-field="airport" type="text" value="${escapeHtml(flight.airport || 'MBJ')}" aria-label="Airport code" maxlength="3"></td>
                     <td><input data-field="travelers" type="number" value="${Number(flight.travelers) || 0}" min="1" max="${familyTotalForFlight(flight) || ''}" inputmode="numeric" aria-label="Number of travelers"></td>
                     <td><select data-field="busNeeded" aria-label="Bus transportation needed"><option value="Yes"${flight.busNeeded === 'Yes' ? ' selected' : ''}>Yes</option><option value="No"${flight.busNeeded === 'No' ? ' selected' : ''}>No</option></select></td>
-                    <td class="readonly-value">${escapeHtml(flight.location || 'Select family')}</td>
+                    <td class="readonly-value">${escapeHtml(rsvp.location)}</td>
                 </tr>`;
-            }).join('');
+            }).join('')).join('');
             updateFlightSummary();
         }
 
@@ -1820,13 +1850,13 @@
         async function requestRsvp(action, data = {}) {
             const isGetRequest = action === 'list' || action === 'listFlights' || action === 'listBusPlan';
             const options = isGetRequest
-                ? {}
+                ? { cache: 'no-store' }
                 : {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action, ...data })
                 };
-            const url = isGetRequest ? `${rsvpEndpoint}?action=${action}` : rsvpEndpoint;
+            const url = isGetRequest ? `${rsvpEndpoint}?action=${action}&refresh=${Date.now()}` : rsvpEndpoint;
             const response = await fetch(url, options);
             if (!response.ok) throw new Error(`Spreadsheet request failed (${response.status}).`);
             const result = await response.json();
@@ -1856,6 +1886,8 @@
                 const sharedFlights = Array.isArray(result.flights) ? result.flights.flatMap(normalizeStoredFlight) : [];
                 const localDrafts = flights.filter(flight => !flight.id && (
                     flight.dateTime || flight.airline || flight.flightNumber
+                )).filter(draft => draft.rsvpId && !sharedFlights.some(flight =>
+                    flight.rsvpId === draft.rsvpId && flight.direction === draft.direction
                 ));
                 flights = [...sharedFlights, ...localDrafts];
                 localStorage.setItem(flightStorageKey, JSON.stringify(flights));
@@ -1997,43 +2029,9 @@
             if (!field) return;
             const index = Number(event.target.closest('tr').dataset.index);
             const flight = flights[index];
-            if (field === 'direction' && flight.id && event.target.value !== flight.direction) {
-                const existingIndex = flights.findIndex((entry, entryIndex) =>
-                    entryIndex !== index &&
-                    entry.rsvpId === flight.rsvpId &&
-                    entry.direction === event.target.value
-                );
-                if (existingIndex >= 0) {
-                    saveFlightsLocally(`${event.target.value} flight already exists for ${flight.familyName}. Opening that row instead.`);
-                    renderFlightRows();
-                    flightRows.querySelector(`tr[data-index="${existingIndex}"] [data-field="dateTime"]`).focus();
-                    return;
-                }
-                const newFlight = {
-                    ...makeFlight(event.target.value),
-                    rsvpId: flight.rsvpId,
-                    familyName: flight.familyName,
-                    airport: flight.airport,
-                    travelers: flight.travelers,
-                    busNeeded: flight.busNeeded,
-                    location: flight.location
-                };
-                flights.splice(index + 1, 0, newFlight);
-                saveFlightsLocally(`${newFlight.direction} row added without changing the saved ${flight.direction.toLowerCase()} flight.`);
-                renderFlightRows();
-                flightRows.querySelector(`tr[data-index="${index + 1}"] [data-field="dateTime"]`).focus();
-                return;
-            }
             flight[field] = event.target.type === 'number'
                 ? Math.max(0, Number(event.target.value) || 0)
                 : event.target.value;
-            if (field === 'rsvpId') {
-                const rsvp = rsvps.find(entry => entry.id === flight.rsvpId);
-                flight.familyName = rsvp?.familyName || '';
-                flight.location = rsvp?.location || '';
-                if (rsvp && (!flight.travelers || flight.travelers > rsvp.total)) flight.travelers = rsvp.total;
-                renderFlightRows();
-            }
             scheduleFlightSave(flight);
         }
 
@@ -2112,13 +2110,6 @@
             saveLocally('New row added. Enter a family name to save it to the shared spreadsheet.');
             renderRsvps();
             rsvpRows.querySelector('tr:last-child input').focus();
-        });
-
-        document.getElementById('addFlightFamily').addEventListener('click', () => {
-            flights.push(makeFlight());
-            saveFlightsLocally('New flight group added. Select an RSVP family, direction, and flight time to save it.');
-            renderFlightRows();
-            flightRows.querySelector('tr:last-child select').focus();
         });
 
         document.getElementById('refreshRsvp').addEventListener('click', loadSharedRsvps);

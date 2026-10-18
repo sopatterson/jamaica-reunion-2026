@@ -694,6 +694,17 @@ function upsertFlight(flight) {
     location: rsvp.location
   };
   const sheet = getFlightSheet();
+  let existingRow = requestedId ? findRowById(sheet, requestedId) : null;
+  if (requestedId && !existingRow) {
+    throw new Error('The saved flight entry was not found. Refresh the flight list and try again.');
+  }
+  if (existingRow) {
+    const existingFlight = sheet.getRange(existingRow, 1, 1, FLIGHT_HEADERS.length).getValues()[0];
+    const existingDirection = normalizeOption(existingFlight[3], FLIGHT_DIRECTION_OPTIONS, 'Arrival');
+    if (String(existingFlight[1]) !== savedFlight.rsvpId || existingDirection !== savedFlight.direction) {
+      throw new Error('A saved flight cannot be moved to another family or direction. Open or add that flight leg instead.');
+    }
+  }
   if (!requestedId && sheet.getLastRow() > 1) {
     const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, FLIGHT_HEADERS.length).getValues();
     const matchingDirection = rows.find(row =>
@@ -718,7 +729,7 @@ function upsertFlight(flight) {
     savedFlight.busNeeded,
     savedFlight.location
   ]];
-  const existingRow = findRowById(sheet, savedFlight.id);
+  existingRow = findRowById(sheet, savedFlight.id);
 
   if (existingRow) {
     sheet.getRange(existingRow, 1, 1, FLIGHT_HEADERS.length).setValues(values);
