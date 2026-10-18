@@ -504,6 +504,7 @@ function setupFlightSheets(spreadsheet) {
     flightSheet = spreadsheet.insertSheet(FLIGHT_SHEET_NAME);
   }
   migrateLegacyFlightSheet(flightSheet, false);
+  removeStayRequestColumn(flightSheet);
   formatFlightSheet(flightSheet, FLIGHT_HEADERS, '#028090');
   flightSheet.getRange('E:E').setNumberFormat('@');
 
@@ -512,9 +513,18 @@ function setupFlightSheets(spreadsheet) {
     archiveSheet = spreadsheet.insertSheet(FLIGHT_ARCHIVE_SHEET_NAME);
   }
   migrateLegacyFlightSheet(archiveSheet, true);
+  removeStayRequestColumn(archiveSheet);
   formatFlightSheet(archiveSheet, FLIGHT_ARCHIVE_HEADERS, '#5a1f1f');
   archiveSheet.getRange('E:E').setNumberFormat('@');
   archiveSheet.getRange('L:L').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+}
+
+function removeStayRequestColumn(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+  const stayRequestColumn = headers.indexOf('Stay Request') + 1;
+  if (stayRequestColumn > 0) {
+    sheet.deleteColumn(stayRequestColumn);
+  }
 }
 
 function migrateLegacyFlightSheet(sheet, isArchive) {
