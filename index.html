@@ -1340,7 +1340,7 @@
             <div class="rsvp-tracker flight-tracker" id="flights">
                 <div class="flight-tracker-header">
                     <h3>Flight Information Tracker</h3>
-                    <p>Each attending family has a fixed arrival row and departure row. Add or update the flight details in place.</p>
+                    <p>Families are listed alphabetically, with a fixed arrival row and departure row. Add or update the flight details in place, or download the same family breakdown as an Excel (.xls) file.</p>
                 </div>
                 <div class="flight-summary" aria-label="Bus transportation summary">
                     <div class="flight-stat"><strong id="arrivalBusSeats">0</strong><span>Arrival Bus Seats</span></div>
@@ -1367,8 +1367,8 @@
                 </div>
                 <div class="rsvp-actions">
                     <button class="action-button secondary" id="refreshFlights" type="button">Refresh Shared List</button>
-                    <button class="action-button secondary" id="downloadFlights" type="button">Download Flight List</button>
-                    <button class="action-button secondary" id="downloadBusPlan" type="button">Download Bus Plan</button>
+                    <button class="action-button secondary" id="downloadFlights" type="button">Download Flight List (.xls)</button>
+                    <button class="action-button secondary" id="downloadBusPlan" type="button">Download Bus Plan (.xls)</button>
                 </div>
                 <p class="tracker-note" id="flightSaveStatus" aria-live="polite">Connecting to the shared flight spreadsheet...</p>
             </div>
@@ -1563,6 +1563,7 @@
         </div>
     </footer>
 
+    <script src="vendor/xlsx.full.min.js"></script>
     <script>
         const carouselMedia = [
             { type: 'image', src: 'images/20131014_173509.jpg' },
@@ -1798,8 +1799,14 @@
             updateRsvpSummary();
         }
 
+        function getFlightFamilies() {
+            return rsvps
+                .filter(rsvp => rsvp.id && rsvp.familyName.trim() && rsvp.coming !== 'Unfortunately No')
+                .sort((first, second) => first.familyName.trim().localeCompare(second.familyName.trim(), 'en', { sensitivity: 'base' }));
+        }
+
         function renderFlightRows() {
-            const attendingFamilies = rsvps.filter(rsvp => rsvp.id && rsvp.familyName.trim() && rsvp.coming !== 'Unfortunately No');
+            const attendingFamilies = getFlightFamilies();
             attendingFamilies.forEach(rsvp => {
                 ['Arrival', 'Departure'].forEach(direction => {
                     if (!flights.some(flight => flight.rsvpId === rsvp.id && flight.direction === direction)) {
@@ -2129,43 +2136,54 @@
         });
 
         document.getElementById('downloadFlights').addEventListener('click', () => {
-            const headers = ['Family Name', 'Direction', 'Day & Time', 'Airline', 'Flight Number', 'Airport', 'Travelers', 'Bus Needed', 'Location'];
-            const quote = value => `"${String(value).replace(/"/g, '""')}"`;
-            const rows = flights
-                .filter(flight => flight.id)
-                .sort((first, second) => first.direction.localeCompare(second.direction) || first.dateTime.localeCompare(second.dateTime))
-                .map(flight => [flight.familyName, flight.direction, flight.dateTime, flight.airline, flight.flightNumber, flight.airport, flight.travelers, flight.busNeeded, flight.location]);
-            const csv = [headers, ...rows].map(row => row.map(quote).join(',')).join('\n');
-            const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'jamaica-reunion-2026-flights.csv';
-            link.click();
-            URL.revokeObjectURL(url);
+            try {
+                if (typeof XLSX === 'undefined') throw new Error('The Excel download tool did not load. Refresh the page and try again.');
+                const headers = ['Family Name', 'Direction', 'Day & Time', 'Airline', 'Flight Number', 'Airport', 'Travelers', 'Bus Needed', 'Location'];
+                const families = getFlightFamilies();
+                const rows = families.flatMap(rsvp => ['Arrival', 'Departure'].map((direction, legIndex) => {
+                    const flight = flights.find(entry => entry.rsvpId === rsvp.id && entry.direction === direction) || makeFlight(direction, rsvp);
+                    return [legIndex === 0 ? rsvp.familyName : '', direction, flight.dateTime.replace('T', ' '), flight.airline, flight.flightNumber, flight.airport, flight.travelers, flight.busNeeded, rsvp.location];
+                }));
+                const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+                sheet['!merges'] = families.map((rsvp, index) => ({
+                    s: { r: index * 2 + 1, c: 0 },
+                    e: { r: index * 2 + 2, c: 0 }
+                }));
+                sheet['!cols'] = [28, 14, 22, 20, 16, 10, 12, 14, 18].map(wch => ({ wch }));
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, sheet, 'Flight Tracker');
+                XLSX.writeFile(workbook, 'jamaica-reunion-2026-flights.xls', { bookType: 'biff8' });
+                flightSaveStatus.textContent = 'Excel flight list downloaded, grouped alphabetically by family.';
+            } catch (error) {
+                flightSaveStatus.textContent = `Could not download flight list: ${error.message}`;
+            }
         });
 
         document.getElementById('downloadBusPlan').addEventListener('click', async () => {
             flightSaveStatus.textContent = 'Preparing the shared bus plan...';
             try {
+                if (typeof XLSX === 'undefined') throw new Error('The Excel download tool did not load. Refresh the page and try again.');
                 const result = await requestRsvp('listBusPlan');
                 const headers = ['Direction', 'Day & Time', 'Airport', 'Destination', 'Bus Seats', 'Family Groups'];
-                const quote = value => `"${String(value).replace(/"/g, '""')}"`;
                 const rows = result.busGroups.map(group => [
                     group.direction,
-                    group.dateTime,
+                    group.dateTime.replace('T', ' '),
                     group.airport,
                     group.location,
                     group.totalTravelers,
-                    group.families.map(family => `${family.familyName} (${family.travelers})${family.flightNumber ? ` - ${family.airline} ${family.flightNumber}`.trim() : ''}`).join('; ')
+                    [...group.families]
+                        .sort((first, second) => first.familyName.trim().localeCompare(second.familyName.trim(), 'en', { sensitivity: 'base' }))
+                        .map(family => {
+                            const flightDetails = [family.airline, family.flightNumber].filter(Boolean).join(' ');
+                            return `${family.familyName} (${family.travelers})${family.flightNumber ? ` - ${flightDetails}` : ''}`;
+                        }).join('; ')
                 ]);
-                const csv = [headers, ...rows].map(row => row.map(quote).join(',')).join('\n');
-                const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'jamaica-reunion-2026-bus-plan.csv';
-                link.click();
-                URL.revokeObjectURL(url);
-                flightSaveStatus.textContent = 'Shared bus plan downloaded.';
+                const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+                sheet['!cols'] = [14, 22, 10, 18, 12, 80].map(wch => ({ wch }));
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, sheet, 'Bus Plan');
+                XLSX.writeFile(workbook, 'jamaica-reunion-2026-bus-plan.xls', { bookType: 'biff8' });
+                flightSaveStatus.textContent = 'Shared bus plan downloaded as an Excel file, with families listed alphabetically within each bus group.';
             } catch (error) {
                 flightSaveStatus.textContent = `Could not prepare bus plan: ${error.message}`;
             }
