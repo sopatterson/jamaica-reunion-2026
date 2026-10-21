@@ -1,0 +1,19 @@
+{
+  "name": "jamaica-reunion-2026",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reunion website and Google Apps Script deployment tools",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "apps-script:login": "node scripts/apps-script-deploy.mjs login",
+    "apps-script:status": "node scripts/apps-script-deploy.mjs status",
+    "apps-script:link": "node scripts/apps-script-deploy.mjs link",
+    "apps-script:deploy": "node scripts/apps-script-deploy.mjs deploy"
+  },
+  "devDependencies": {
+    "@google/clasp": "3.4.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

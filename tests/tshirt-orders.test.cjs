@@ -22,10 +22,13 @@ function backend() {
     let now = Date.parse('2026-10-21T02:20:00Z');
     let ready = true;
     let mailError = false;
+    let managerMailError = false;
     let released = 0;
     let quotaChecked = false;
     const rows = [];
     const emails = [];
+    const managerEmails = [];
+    const properties = new Map();
     const errors = [];
     const sheet = {
         getLastRow: () => rows.length,
@@ -63,6 +66,7 @@ function backend() {
             })
         },
         Utilities: {
+            getUuid: () => crypto.randomUUID(),
             DigestAlgorithm: { SHA_256: 'sha256' },
             Charset: { UTF_8: 'utf8' },
             computeDigest: (algorithm, value, charset) => [...crypto.createHash(algorithm).update(value, charset).digest()],
@@ -74,10 +78,20 @@ function backend() {
         MailApp: {
             getRemainingDailyQuota: () => { quotaChecked = true; return 100; },
             sendEmail(message) {
+                if (message.to === 'chrishird20@gmail.com') {
+                    if (managerMailError) throw new Error('Manager email quota exhausted');
+                    managerEmails.push(message);
+                    return;
+                }
                 if (mailError) throw new Error('Email quota exhausted');
                 emails.push(message);
             }
         },
+        PropertiesService: { getScriptProperties: () => ({
+            getProperty: key => properties.get(key) ?? null,
+            setProperty: (key, value) => properties.set(key, value),
+            deleteProperty: key => properties.delete(key)
+        }) },
         LockService: { getScriptLock: () => ({
             waitLock() {},
             releaseLock() { released += 1; }
@@ -91,10 +105,11 @@ function backend() {
     vm.runInContext(source, context);
     rows.push(Array.from(vm.runInContext('TSHIRT_HEADERS', context)));
     return {
-        context, rows, emails, errors, sheet,
+        context, rows, emails, managerEmails, properties, errors, sheet,
         setNow: value => { now = Date.parse(value); },
         setReady: value => { ready = value; },
         setMailError: value => { mailError = value; },
+        setManagerMailError: value => { managerMailError = value; },
         get released() { return released; },
         get quotaChecked() { return quotaChecked; },
         post(action, data = {}) {
@@ -276,4 +291,128 @@ test('existing health endpoint still responds and unknown actions remain errors'
     assert.equal(app.get('health').success, true);
     assert.equal(app.post('unknown').success, false);
     assert.equal(app.get('unknown').success, false);
+});
+
+test('new and updated orders notify Chris without sharing family edit links', () => {
+    const app = backend();
+    const first = app.post('saveTshirtOrder', { order: order() });
+    assert.equal(first.managerNotified, true);
+    assert.equal(app.managerEmails.length, 1);
+    assert.match(app.managerEmails[0].subject, /New T-Shirt Order/);
+    assert.equal(app.managerEmails[0].to, 'chrishird20@gmail.com');
+    assert.match(app.managerEmails[0].body, /tshirt-orders\.html#token=[0-9a-f]{64}/);
+    assert.ok(!app.managerEmails[0].body.includes(token));
+    assert.ok(!app.managerEmails[0].body.includes('tshirts.html#order='));
+    assert.ok(!app.emails[0].body.includes('tshirt-orders.html'));
+    assert.equal(first.managerToken, undefined);
+    app.post('saveTshirtOrder', { order: order(1, { email: 'updated@example.com' }) });
+    assert.match(app.managerEmails[1].subject, /Updated T-Shirt Order/);
+    assert.ok(app.managerEmails[1].body.includes('updated@example.com'));
+    assert.equal(app.rows.length, 2);
+});
+
+test('manager setup emails all existing orders and a stable private download link', () => {
+    const app = backend();
+    app.post('saveTshirtOrder', { order: order(1, { contactName: 'Zimmerman' }) });
+    app.post('saveTshirtOrder', { order: order(2, { id: '22222222-2222-4222-8222-222222222222', contactName: 'Anderson' }) });
+    app.context.setupTshirtManager();
+    const message = app.managerEmails.at(-1);
+    assert.match(message.body, /2 family orders for 3 shirts/);
+    assert.ok(message.body.indexOf('Contact Name: Anderson') < message.body.indexOf('Contact Name: Zimmerman'));
+    assert.ok(message.body.includes('Person 2 - S'));
+    assert.match(message.subject, /All T-Shirt Orders/);
+    const managerToken = app.properties.get('tshirtManagerToken');
+    assert.match(managerToken, /^[0-9a-f]{64}$/);
+    assert.ok(message.body.includes(managerToken));
+    app.context.setupTshirtManager();
+    assert.equal(app.properties.get('tshirtManagerToken'), managerToken);
+    assert.equal(app.rows.length, 3);
+});
+
+test('only the manager token can list all orders; no edit credentials are returned', () => {
+    const app = backend();
+    app.post('saveTshirtOrder', { order: order() });
+    const managerToken = app.properties.get('tshirtManagerToken');
+    for (const invalid of [undefined, '', 'cd'.repeat(32), token, ['a'], {}]) {
+        const result = app.post('listTshirtOrders', { managerToken: invalid });
+        assert.equal(result.success, false);
+        assert.match(result.error, /private manager link is invalid/);
+        assert.equal(result.orders, undefined);
+    }
+    const result = app.post('listTshirtOrders', { managerToken });
+    assert.equal(result.success, true);
+    assert.equal(result.orders.length, 1);
+    assert.deepEqual(result.orders[0].members, order().members);
+    assert.ok(!JSON.stringify(result).includes(token));
+    assert.ok(!JSON.stringify(result).includes(managerToken));
+    assert.ok(!JSON.stringify(result).includes(app.rows[1][26]));
+    assert.equal(app.get('listTshirtOrders', { managerToken }).success, false);
+    app.setNow('2026-10-27T12:00:00Z');
+    assert.equal(app.post('listTshirtOrders', { managerToken }).success, true);
+});
+
+test('manager notifications are attempted even if the family email fails', () => {
+    const app = backend();
+    app.setMailError(true);
+    const result = app.post('saveTshirtOrder', { order: order() });
+    assert.equal(result.emailSent, false);
+    assert.equal(result.managerNotified, true);
+    assert.equal(app.managerEmails.length, 1);
+    assert.equal(app.rows.length, 2);
+});
+
+test('manager email failures preserve family confirmation and explicitly warn without losing the order', () => {
+    const app = backend();
+    app.setManagerMailError(true);
+    const result = app.post('saveTshirtOrder', { order: order() });
+    assert.equal(result.emailSent, true);
+    assert.equal(result.managerNotified, false);
+    assert.match(result.managerWarning, /order is saved.*notification email could not be sent/);
+    assert.equal(app.emails.length, 1);
+    assert.equal(app.rows.length, 2);
+    assert.equal(app.errors.length, 1);
+    app.setManagerMailError(false);
+    app.context.setupTshirtManager();
+    assert.equal(app.managerEmails.length, 1);
+});
+
+test('both email failures are reported independently while the order remains saved', () => {
+    const app = backend();
+    app.setMailError(true);
+    app.setManagerMailError(true);
+    const result = app.post('saveTshirtOrder', { order: order() });
+    assert.equal(result.success, true);
+    assert.equal(result.emailSent, false);
+    assert.equal(result.managerNotified, false);
+    assert.match(result.warning, /confirmation email could not be sent/);
+    assert.match(result.managerWarning, /organizer notification email could not be sent/);
+    assert.equal(app.errors.length, 2);
+    assert.equal(app.rows.length, 2);
+});
+
+test('a corrupt stored manager token cannot produce a broken successful invitation', () => {
+    const app = backend();
+    app.properties.set('tshirtManagerToken', 'invalid');
+    assert.throws(() => app.context.setupTshirtManager(), /Delete the tshirtManagerToken Script Property/);
+    assert.equal(app.managerEmails.length, 0);
+});
+
+test('an empty order sheet still emails a manager link and allows an empty download', () => {
+    const app = backend();
+    app.context.setupTshirtManager();
+    assert.match(app.managerEmails[0].body, /0 family orders for 0 shirts/);
+    assert.deepEqual(app.post('listTshirtOrders', { managerToken: app.properties.get('tshirtManagerToken') }).orders, []);
+});
+
+test('revoking the manager token invalidates the old link and setup creates a new one', () => {
+    const app = backend();
+    app.context.setupTshirtManager();
+    const original = app.properties.get('tshirtManagerToken');
+    app.properties.delete('tshirtManagerToken');
+    assert.equal(app.post('listTshirtOrders', { managerToken: original }).success, false);
+    app.context.setupTshirtManager();
+    const replacement = app.properties.get('tshirtManagerToken');
+    assert.notEqual(replacement, original);
+    assert.equal(app.post('listTshirtOrders', { managerToken: original }).success, false);
+    assert.equal(app.post('listTshirtOrders', { managerToken: replacement }).success, true);
 });

@@ -35,7 +35,8 @@ links still allow viewing the response and resending its email copy.
 
 ### Required backend deployment
 
-Before publishing the new page:
+Use the automated deployment command below once this workspace is authorized.
+The manual alternative, including initial sheet setup, is:
 
 1. Open the Google Apps Script project serving the existing RSVP endpoint.
 2. Replace its code with [google-apps-script.gs](google-apps-script.gs).
@@ -80,4 +81,121 @@ Run both export and order tests:
 
 ```sh
 node --test tests/flight-export.test.cjs tests/tshirt-orders.test.cjs
+```
+
+### T-shirt event manager
+
+New orders and updates also send a separate notification to
+**chrishird20@gmail.com**. The family still receives its own response copy and
+private edit link. Manager emails do not contain the family's edit credentials.
+If either email fails, the order stays saved, the failure is logged, and the
+page reports the relevant delivery problem independently.
+
+After updating the Apps Script code and redeploying a new version of the
+existing web app, run **`setupTshirtManager`** in the Apps Script editor.
+This emails Chris a snapshot of **all existing orders** and a private link to
+[the manager page](tshirt-orders.html). It also works when there are no orders
+yet, and rerunning it sends an updated snapshot using the same private link.
+Make sure the website manager page has been published before Chris uses it.
+
+Chris can refresh the order list or choose **Download All Orders (.xls)**.
+Each download fetches the current full list, including edits, and produces
+one Excel workbook with:
+
+- **Orders:** one row per person, with contact name, email, family shirt count,
+  member name, shirt size, and order reference. The family count is repeated
+  for context on each person's row; use the **Size Totals** worksheet for totals
+  rather than summing this repeated column.
+- **Size Totals:** quantities for XS, S, M, L, XL, XXL, the total shirt count,
+  and the number of family orders.
+
+Orders are listed alphabetically by contact name. Downloads remain available
+after the submission deadline. The manager page is read-only and is not linked
+from the public reunion page. Access requires the private manager token, which
+is sent to the backend only in a POST body and is never included in exports.
+
+The manager token is generated from two random UUIDs and stored in the Apps
+Script project's **Script Properties** as `tshirtManagerToken`, not in the
+website or spreadsheet. Treat the emailed manager link and downloaded files
+as confidential: anyone with the link can see all orders. To revoke a leaked
+link, delete that Script Property and run `setupTshirtManager` again; the old
+link will stop working and Chris will receive a new one.
+
+Run all related regression tests:
+
+```sh
+node --test tests/flight-export.test.cjs tests/tshirt-orders.test.cjs tests/tshirt-manager.test.cjs
+```
+
+## Automated Apps Script deployments
+
+This project pins `@google/clasp` as a development dependency. It publishes
+backend updates to the **existing** Google Apps Script deployment, preserving
+the `/exec` URL, original manifest, access settings, and remote-only source
+files. It does not create a new Google project or replace spreadsheet data.
+
+### One-time authorization and linking
+
+1. Install Node.js 20 or newer and run `npm ci`. On the current Mac, a
+   checksum-verified Node.js 24.22.1 installation is available in
+   `~/.local/share/jamaica-reunion-tools/node-v24.22.1-darwin-arm64/`.
+   The shell wrapper below automatically uses it when `node` is not on PATH.
+2. Enable **Google Apps Script API** in
+   [Apps Script user settings](https://script.google.com/home/usersettings).
+3. Run:
+
+   ```sh
+   ./scripts/apps-script.sh login
+   ./scripts/apps-script.sh link EXISTING_SCRIPT_ID
+   ```
+
+   Complete Google's sign-in and consent in the browser. The Script ID is in
+   the existing project's **Project Settings**, not its deployment URL.
+   Linking checks that the project contains the deployment already used by
+   the website and refuses to overwrite unmerged remote edits.
+
+### Deploy an update
+
+```sh
+./scripts/apps-script.sh deploy "Describe the backend update"
+```
+
+This runs all regression tests, downloads a fresh private project snapshot,
+replaces only the reunion backend source file, pushes it, reads it back to
+verify the exact code and preserved manifest, creates an immutable version,
+and updates the same live deployment. It stops explicitly if the Google
+editor has unmerged changes or the source/deployment cannot be verified.
+Avoid editing the Google project while a deployment is running.
+
+With Node/npm on PATH, the equivalent commands are `npm run apps-script:login`,
+`npm run apps-script:link -- EXISTING_SCRIPT_ID`, and
+`npm run apps-script:deploy -- "Describe the backend update"`.
+
+Use `./scripts/apps-script.sh status` to check authorization or
+`./scripts/apps-script.sh open` to open the existing project. Initial
+administrative functions such as `setupTshirtSheet` or `setupTshirtManager`
+are separate from deployment: select the function and click **Run** in the
+editor when needed. Ordinary code updates require no copying, pasting, or
+manual deployment version selection.
+
+### Credential and publication safety
+
+Google authorization is stored in
+`~/.config/jamaica-reunion/clasp-auth.json` with owner-only permissions,
+outside the repository. Do not paste its contents into chat or commit it.
+Google may occasionally require renewed consent; run the login command again.
+Authorization can also be revoked from your Google account.
+
+Project links and temporary source snapshots stay in the Git-ignored
+`.apps-script/` directory. The previous and current deployment version
+numbers are recorded locally for recovery. Do not run a forced push to
+bypass remote-source conflicts; merge those changes first.
+
+GitHub Pages now stages only public browser files plus the `images/` and
+`vendor/` directories into `_site/`. OAuth files, Apps Script source,
+deployment configuration, development dependencies, and automation scripts
+are not uploaded as website files. To validate the public staging locally:
+
+```sh
+node scripts/prepare-site.mjs
 ```

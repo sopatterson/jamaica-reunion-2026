@@ -266,6 +266,9 @@
                 ? `A confirmation email with your response copy and private edit link was sent to ${savedOrder.email}. Check your spam folder if needed.`
                 : result.warning;
             emailStatus.classList.toggle('error', !result.emailSent);
+            const managerStatus = document.getElementById('managerStatus');
+            managerStatus.textContent = result.managerWarning || '';
+            managerStatus.hidden = !result.managerWarning;
             document.getElementById('retryEmail').hidden = result.emailSent;
             form.hidden = true;
             confirmation.hidden = false;
