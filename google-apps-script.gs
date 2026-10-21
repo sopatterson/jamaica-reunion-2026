@@ -14,8 +14,6 @@ const TSHIRT_ORDER_DEADLINE = '2026-10-26T00:00:00-04:00';
 const TSHIRT_ORDER_TIME_ZONE = 'America/New_York';
 const TSHIRT_ORDER_PAGE = 'https://sopatterson.github.io/jamaica-reunion-2026/tshirts.html';
 const TSHIRT_MANAGER_EMAIL = 'chrishird20@gmail.com';
-const TSHIRT_MANAGER_PAGE = 'https://sopatterson.github.io/jamaica-reunion-2026/tshirt-orders.html';
-const TSHIRT_MANAGER_TOKEN_PROPERTY = 'tshirtManagerToken';
 const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 const TSHIRT_HEADERS = [
   'Order ID', 'Contact Name', 'Email Address', 'Number of Family Members',
@@ -200,11 +198,6 @@ function doPost(event) {
       const record = findPrivateTshirtOrder(request.orderId, request.editToken);
       sendTshirtConfirmation(tshirtOrderFromRow(record.values), request.editToken);
       return jsonResponse({ success: true, emailSent: true });
-    }
-
-    if (request.action === 'listTshirtOrders') {
-      validateTshirtManagerToken(request.managerToken);
-      return jsonResponse({ success: true, orders: getAllTshirtOrders() });
     }
 
     if (request.action === 'reviewPhoto') {
@@ -532,12 +525,7 @@ function saveTshirtOrder(order) {
     result.warning = 'Your order was saved, but the confirmation email could not be sent. Save your private edit link and use Retry confirmation email.';
   }
   try {
-    sendTshirtManagerEmail(
-      'Jamaica Reunion - ' + (existing ? 'Updated' : 'New') + ' T-Shirt Order',
-      [savedOrder],
-      (existing ? 'An existing family order was updated.' : 'A new family order was submitted.') +
-        ' Download the current full order list using your private manager link below.'
-    );
+    sendTshirtManagerEmail(savedOrder, Boolean(existing));
     result.managerNotified = true;
   } catch (error) {
     console.error('T-shirt manager notification failed for order ' + savedOrder.id + ': ' + error.message);
@@ -585,73 +573,26 @@ function tshirtOrderEmailHtml(order) {
     '</ol>';
 }
 
-function getAllTshirtOrders() {
-  const sheet = getTshirtSheet();
-  if (sheet.getLastRow() < 2) return [];
-  return sheet.getRange(2, 1, sheet.getLastRow() - 1, TSHIRT_HEADERS.length).getValues()
-    .filter(row => row[0])
-    .map(tshirtOrderFromRow)
-    .sort((first, second) => first.contactName.localeCompare(second.contactName, 'en', { sensitivity: 'base' }) ||
-      first.id.localeCompare(second.id));
-}
-
-function getTshirtManagerToken() {
-  const properties = PropertiesService.getScriptProperties();
-  let token = properties.getProperty(TSHIRT_MANAGER_TOKEN_PROPERTY);
-  if (token && !/^[0-9a-f]{64}$/.test(token)) {
-    throw new Error('The manager token is invalid. Delete the tshirtManagerToken Script Property and run setupTshirtManager again.');
-  }
-  if (!token) {
-    token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '').toLowerCase();
-    properties.setProperty(TSHIRT_MANAGER_TOKEN_PROPERTY, token);
-  }
-  return token;
-}
-
-function validateTshirtManagerToken(token) {
-  const stored = PropertiesService.getScriptProperties().getProperty(TSHIRT_MANAGER_TOKEN_PROPERTY);
-  if (typeof token !== 'string' || !/^[0-9a-f]{64}$/.test(token) || !stored || token !== stored) {
-    throw new Error('This private manager link is invalid. Use the full link emailed to the T-shirt organizer.');
-  }
-}
-
-function sendTshirtManagerEmail(subject, orders, introduction) {
-  const managerUrl = TSHIRT_MANAGER_PAGE + '#token=' + encodeURIComponent(getTshirtManagerToken());
+function sendTshirtManagerEmail(order, isUpdate) {
+  const sheetUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/edit#gid=' + getTshirtSheet().getSheetId();
+  const introduction = isUpdate ? 'An existing family order was updated.' : 'A new family order was submitted.';
   MailApp.sendEmail({
     to: TSHIRT_MANAGER_EMAIL,
-    subject,
+    subject: 'Jamaica Reunion - ' + (isUpdate ? 'Updated' : 'New') + ' T-Shirt Order',
     body: [
       introduction, '',
-      ...orders.flatMap(order => [...tshirtOrderEmailLines(order), 'Order reference: ' + order.id, '']),
-      'View and download ALL orders in one Excel file: ' + managerUrl,
-      'The Excel file includes one row per person and a second worksheet with shirt-size totals.',
-      'Keep this manager link private. It provides access to all family contact details and orders.',
-      'The list includes existing orders and future updates, and remains available after the order deadline.'
+      ...tshirtOrderEmailLines(order), 'Order reference: ' + order.id, '',
+      'View all orders in the T-Shirt Orders tab of the shared reunion spreadsheet: ' + sheetUrl,
+      'Sign in with the Google account that has access to the spreadsheet.',
+      'Download all orders using File > Download > Microsoft Excel (.xlsx).',
+      'The shared workbook also includes RSVP and flight information. Keep it private, and leave order IDs and the hidden edit-token column unchanged.'
     ].join('\n'),
     htmlBody: '<h1>T-Shirt Orders</h1><p>' + escapeHtmlForEmail(introduction) + '</p>' +
-      orders.map(order => tshirtOrderEmailHtml(order) + '<p>Order reference: ' + escapeHtmlForEmail(order.id) + '</p>').join('<hr>') +
-      '<p><a href="' + escapeHtmlForEmail(managerUrl) + '">View and download all orders as one Excel file</a></p>' +
-      '<p>One row per person, plus a shirt-size totals worksheet. Existing orders and future updates are included.</p>' +
-      '<p>Keep this link private: it provides access to all family contact details and orders. Downloads remain available after the deadline.</p>'
+      tshirtOrderEmailHtml(order) + '<p>Order reference: ' + escapeHtmlForEmail(order.id) + '</p>' +
+      '<p><a href="' + escapeHtmlForEmail(sheetUrl) + '">Open all T-shirt orders in the shared spreadsheet</a></p>' +
+      '<p>Sign in with your authorized Google account. Choose <strong>File &gt; Download &gt; Microsoft Excel (.xlsx)</strong> to download the workbook.</p>' +
+      '<p>The workbook also includes RSVP and flight information. Keep it private, and leave order IDs and the hidden edit-token column unchanged.</p>'
   });
-}
-
-function setupTshirtManager() {
-  const lock = LockService.getScriptLock();
-  try {
-    lock.waitLock(10000);
-    const orders = getAllTshirtOrders();
-    sendTshirtManagerEmail(
-      'Jamaica Reunion - All T-Shirt Orders and Private Download Link',
-      orders,
-      'You are managing T-shirt orders for the reunion. There are currently ' + orders.length +
-        ' family orders for ' + orders.reduce((total, order) => total + order.members.length, 0) +
-        ' shirts. You will receive an email for each new or updated order.'
-    );
-    console.log('Current orders and the private download link were emailed to ' + TSHIRT_MANAGER_EMAIL + '.');
-  } finally {
-    lock.releaseLock();
-  }
 }
 
 function upsertRsvp(rsvp) {

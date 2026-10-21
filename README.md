@@ -83,48 +83,41 @@ Run both export and order tests:
 node --test tests/flight-export.test.cjs tests/tshirt-orders.test.cjs
 ```
 
-### T-shirt event manager
+### T-shirt organizer access
 
 New orders and updates also send a separate notification to
 **chrishird20@gmail.com**. The family still receives its own response copy and
-private edit link. Manager emails do not contain the family's edit credentials.
+private edit link. Organizer emails do not contain the family's edit credentials.
 If either email fails, the order stays saved, the failure is logged, and the
 page reports the relevant delivery problem independently.
 
-After updating the Apps Script code and redeploying a new version of the
-existing web app, run **`setupTshirtManager`** in the Apps Script editor.
-This emails Chris a snapshot of **all existing orders** and a private link to
-[the manager page](tshirt-orders.html). It also works when there are no orders
-yet, and rerunning it sends an updated snapshot using the same private link.
-Make sure the website manager page has been published before Chris uses it.
+Chris uses the existing **T-Shirt Orders** tab in the
+[shared reunion spreadsheet](https://docs.google.com/spreadsheets/d/1CnTfSMjKRbHTd1RVeWkvCULY-ds1HmdrC3HMQetoMuk/edit#gid=1731207462).
+Orders remain in their original rows: one family per row with up to ten
+member name/size pairs. New submissions and edits appear automatically; no
+separate manager page, export synchronization, or setup email is required.
 
-Chris can refresh the order list or choose **Download All Orders (.xls)**.
-Each download fetches the current full list, including edits, and produces
-one Excel workbook with:
+The spreadsheet is shared with **chrishird20@gmail.com** as an **Editor**, as
+approved by the organizer. General access remains **Restricted**. Google
+permissions apply to the entire workbook, so Chris can also view and edit the
+RSVP, flight, and archive tabs. Keep access limited to trusted organizers.
+Leave order IDs and the hidden edit-token hash column unchanged to preserve
+families' private edit links.
 
-- **Orders:** one row per person, with contact name, email, family shirt count,
-  member name, shirt size, and order reference. The family count is repeated
-  for context on each person's row; use the **Size Totals** worksheet for totals
-  rather than summing this repeated column.
-- **Size Totals:** quantities for XS, S, M, L, XL, XXL, the total shirt count,
-  and the number of family orders.
+To download all orders, Chris can choose **File > Download > Microsoft Excel
+(.xlsx)** in Google Sheets. This downloads the entire workbook, including the
+T-Shirt Orders tab and the other reunion tabs. Google permissions and downloads
+remain available after the order deadline.
 
-Orders are listed alphabetically by contact name. Downloads remain available
-after the submission deadline. The manager page is read-only and is not linked
-from the public reunion page. Access requires the private manager token, which
-is sent to the backend only in a POST body and is never included in exports.
-
-The manager token is generated from two random UUIDs and stored in the Apps
-Script project's **Script Properties** as `tshirtManagerToken`, not in the
-website or spreadsheet. Treat the emailed manager link and downloaded files
-as confidential: anyone with the link can see all orders. To revoke a leaked
-link, delete that Script Property and run `setupTshirtManager` again; the old
-link will stop working and Chris will receive a new one.
+New and updated order notifications now point directly to this Google Sheets
+tab. Previous manager-page URLs forward there as well; Google sign-in and
+spreadsheet permissions are required. The former token-based order-list API
+has been removed, so old manager tokens no longer grant access.
 
 Run all related regression tests:
 
 ```sh
-node --test tests/flight-export.test.cjs tests/tshirt-orders.test.cjs tests/tshirt-manager.test.cjs
+node --test tests/flight-export.test.cjs tests/tshirt-orders.test.cjs tests/apps-script-deploy.test.cjs
 ```
 
 ## Automated Apps Script deployments
@@ -173,9 +166,10 @@ With Node/npm on PATH, the equivalent commands are `npm run apps-script:login`,
 
 Use `./scripts/apps-script.sh status` to check authorization or
 `./scripts/apps-script.sh open` to open the existing project. Initial
-administrative functions such as `setupTshirtSheet` or `setupTshirtManager`
-are separate from deployment: select the function and click **Run** in the
-editor when needed. Ordinary code updates require no copying, pasting, or
+administrative functions such as `setupTshirtSheet` are separate from deployment:
+select the function and click **Run** in the editor when initially setting up
+the sheet. Routine order access and Chris's spreadsheet sharing need no Apps
+Script setup function. Ordinary code updates require no copying, pasting, or
 manual deployment version selection.
 
 ### Credential and publication safety

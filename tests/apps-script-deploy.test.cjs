@@ -8,7 +8,7 @@ const { test } = require('node:test');
 const scriptId = '123456789012345678901234567890';
 const deploymentId = 'AKfy-existing';
 const baseline = "const SPREADSHEET_ID = 'sheet';\nfunction doGet() {}\nfunction doPost() {}\n";
-const updated = baseline + '\nfunction setupTshirtManager() {}\n';
+const updated = baseline + '\nfunction sendTshirtManagerEmail() {}\n';
 const manifest = { timeZone: 'America/New_York', webapp: { executeAs: 'USER_DEPLOYING', access: 'ANYONE_ANONYMOUS' } };
 
 async function fixture(t) {
