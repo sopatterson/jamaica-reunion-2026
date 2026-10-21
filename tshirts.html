@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex">
+    <title>Family T-Shirt Order Form | Jamaica Reunion 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { color-scheme: light; --green: #075a36; --yellow: #fcd116; --cream: #fff9f0; }
+        * { box-sizing: border-box; }
+        [hidden] { display: none !important; }
+        body { margin: 0; background: var(--cream); color: #253b30; font-family: 'Raleway', sans-serif; line-height: 1.7; }
+        header { padding: 2.5rem 1.25rem; background: linear-gradient(135deg, #075a36, #028090); color: white; }
+        .container { max-width: 860px; margin: 0 auto; }
+        header a { color: white; }
+        h1, h2 { font-family: 'Playfair Display', serif; line-height: 1.25; }
+        h1 { margin: 1.25rem 0 0.75rem; color: var(--yellow); font-size: clamp(2rem, 6vw, 3.25rem); }
+        h2 { color: var(--green); font-size: 1.5rem; }
+        main { padding: 2rem 1rem 4rem; }
+        .card { margin: 0 0 1.5rem; padding: 1.75rem; border: 1px solid #d5e5da; border-radius: 12px; background: white; box-shadow: 0 8px 25px #17352b0d; }
+        .intro { border-top: 5px solid var(--yellow); }
+        .notice { padding: 1rem; border-left: 4px solid #028090; background: #edf7f4; overflow-wrap: anywhere; }
+        .error { border-color: #982828; color: #7b2020; background: #fff1ef; }
+        #formStatus:empty { display: none; }
+        fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+        .member { margin-top: 1.5rem; padding: 1.25rem; border: 1px solid #b5cdbf; border-radius: 8px; }
+        legend { padding: 0 0.5rem; font-weight: 700; color: var(--green); }
+        label { display: block; margin: 1rem 0 0.35rem; font-weight: 700; }
+        input, select { width: 100%; min-height: 46px; padding: 0.7rem; border: 1px solid #8ba697; border-radius: 5px; background: white; color: #253b30; font: inherit; }
+        input:disabled, select:disabled { background: #f0f3f1; color: #52665a; }
+        input[type="checkbox"] { width: 1.25rem; min-height: 1.25rem; margin: 0.25rem 0 0; accent-color: var(--green); }
+        .check-label { display: flex; align-items: flex-start; gap: 0.7rem; }
+        .fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 1rem; }
+        .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; }
+        button, .button { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0.75rem 1.2rem; border: 2px solid var(--green); border-radius: 5px; background: var(--green); color: white; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+        .secondary { color: var(--green); background: white; }
+        button:disabled { cursor: not-allowed; opacity: 0.6; }
+        :focus-visible { outline: 3px solid #028090; outline-offset: 3px; }
+        .hint { margin-top: 0.4rem; color: #52665a; font-size: 0.9rem; }
+        dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.5rem 1rem; }
+        dt { font-weight: 700; }
+        dd { margin: 0; overflow-wrap: anywhere; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 0.75rem; border-bottom: 1px solid #d5e5da; overflow-wrap: anywhere; }
+        th { color: var(--green); background: #eef6f1; }
+        footer { padding: 1.5rem; text-align: center; color: #52665a; }
+        a { color: var(--green); }
+        @media (max-width: 560px) {
+            .card { padding: 1.25rem; }
+            .fields { grid-template-columns: 1fr; gap: 0; }
+            dl { grid-template-columns: 1fr; gap: 0.1rem; }
+            dd { margin-bottom: 0.75rem; }
+            .actions > * { width: 100%; }
+        }
+    </style>
+    <script src="tshirts.js" defer></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <a href="index.html">Back to the reunion website</a>
+            <h1>Family T-Shirt Order Form</h1>
+            <p>Jamaica Family Reunion 2026</p>
+        </div>
+    </header>
+    <main class="container">
+        <section class="card intro" aria-labelledby="introHeading">
+            <h2 id="introHeading">One order for the whole family</h2>
+            <p>Please submit <strong>one response per family</strong>. Choose a shirt size for each person who needs a shirt.</p>
+            <p>A confirmation email with a copy of your responses and a private edit link will be sent after submission. Use that link to update your existing order instead of submitting again.</p>
+            <p><strong>Order and edit deadline:</strong> <time id="orderDeadline">Loading the order deadline...</time></p>
+            <p class="hint">Your contact information and family member details are not displayed publicly. Keep your edit link private.</p>
+        </section>
+        <noscript><p class="notice error">JavaScript is required to select family members and submit this form.</p></noscript>
+        <p id="closedNotice" class="notice" role="status" hidden>Orders and edits are closed. You can still view your saved response using your private link.</p>
+        <p id="formStatus" class="notice" role="status" aria-live="polite">Connecting to the order form...</p>
+        <button id="retryLoad" class="secondary" type="button" hidden>Retry loading form</button>
+        <form id="tshirtForm">
+            <fieldset id="orderFields" disabled>
+                <div id="detailsPanel">
+                    <section class="card" aria-labelledby="contactHeading">
+                        <h2 id="contactHeading">1. Family contact information</h2>
+                        <p class="hint">All fields are required.</p>
+                        <label for="contactName">Primary Contact Name</label>
+                        <input id="contactName" name="contactName" type="text" autocomplete="name" maxlength="100" required>
+                        <label for="email">Email Address</label>
+                        <input id="email" name="email" type="email" autocomplete="email" maxlength="254" aria-describedby="emailHint" required>
+                        <p id="emailHint" class="hint">Your response copy and private edit link will be sent here. Please check the address carefully.</p>
+                        <label for="memberCount">Number of Family Members Needing Shirts</label>
+                        <select id="memberCount" name="memberCount" required>
+                            <option value="1">1</option><option value="2">2</option>
+                            <option value="3">3</option><option value="4">4</option>
+                            <option value="5">5</option><option value="6">6</option>
+                            <option value="7">7</option><option value="8">8</option>
+                            <option value="9">9</option><option value="10">10</option>
+                        </select>
+                    </section>
+                    <section class="card" aria-labelledby="membersHeading">
+                        <h2 id="membersHeading">2. Family member details</h2>
+                        <p>Enter a name and choose one size for each family member.</p>
+                        <div id="memberSections"></div>
+                        <div class="actions"><button id="reviewOrder" type="button">Review family order</button></div>
+                    </section>
+                </div>
+                <section id="reviewPanel" class="card" aria-labelledby="reviewHeading" hidden>
+                    <h2 id="reviewHeading" tabindex="-1">3. Review your family order</h2>
+                    <p>Please verify every name, shirt size, and your email address before submitting.</p>
+                    <div id="reviewSummary"></div>
+                    <label class="check-label" for="verifySizes">
+                        <input id="verifySizes" type="checkbox">
+                        <span>I have checked all names and sizes and confirm that this is my family's order.</span>
+                    </label>
+                    <div class="actions">
+                        <button id="backToDetails" class="secondary" type="button">Back to make changes</button>
+                        <button id="submitOrder" type="submit">Submit family order</button>
+                    </div>
+                </section>
+            </fieldset>
+        </form>
+        <section id="confirmation" class="card" aria-labelledby="confirmationHeading" hidden>
+            <h2 id="confirmationHeading" tabindex="-1">Your family order is saved</h2>
+            <p id="emailStatus" class="notice"></p>
+            <div id="savedSummary"></div>
+            <label for="privateEditLink">Your private view / edit link</label>
+            <input id="privateEditLink" type="text" readonly aria-describedby="privateLinkHint">
+            <p id="privateLinkHint" class="hint">Save this link. Anyone with it can view your response and edit it before the deadline.</p>
+            <div class="actions">
+                <button id="editOrder" type="button">Edit this order</button>
+                <button id="retryEmail" class="secondary" type="button" hidden>Retry confirmation email</button>
+                <a class="button secondary" href="index.html">Back to reunion website</a>
+            </div>
+        </section>
+    </main>
+    <footer>Jamaica Family Reunion 2026 &middot; One family, one celebration</footer>
+</body>
+</html>

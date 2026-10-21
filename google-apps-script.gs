@@ -9,6 +9,19 @@ const PHOTO_APPROVED_FOLDER_NAME = 'Approved Jamaica Reunion Photos';
 const PHOTO_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
 const PHOTO_UPLOAD_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const PHOTO_REVIEW_PROPERTY_PREFIX = 'photoReview:';
+const TSHIRT_SHEET_NAME = 'T-Shirt Orders';
+const TSHIRT_ORDER_DEADLINE = '2026-10-26T00:00:00-04:00';
+const TSHIRT_ORDER_TIME_ZONE = 'America/New_York';
+const TSHIRT_ORDER_PAGE = 'https://sopatterson.github.io/jamaica-reunion-2026/tshirts.html';
+const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const TSHIRT_HEADERS = [
+  'Order ID', 'Contact Name', 'Email Address', 'Number of Family Members',
+  ...Array.from({ length: 10 }, (_, index) => [
+    'Family Member ' + (index + 1) + ' Name',
+    'Family Member ' + (index + 1) + ' Size'
+  ]).flat(),
+  'Created At', 'Updated At', 'Edit Token Hash'
+];
 
 const HEADERS = [
   'ID',
@@ -121,6 +134,11 @@ function doGet(event) {
       return jsonResponse({ success: true, photos: getApprovedPhotos() });
     }
 
+    if (action === 'tshirtConfig') {
+      getTshirtSheet();
+      return jsonResponse({ success: true, ...getTshirtConfig() });
+    }
+
     if (action === 'reviewPhoto') {
       return renderPhotoReviewPage(event.parameter);
     }
@@ -164,6 +182,21 @@ function doPost(event) {
         success: true,
         photo: submitPhotoForReview(request.photo)
       });
+    }
+
+    if (request.action === 'saveTshirtOrder') {
+      return jsonResponse({ success: true, ...saveTshirtOrder(request.order) });
+    }
+
+    if (request.action === 'getTshirtOrder') {
+      const record = findPrivateTshirtOrder(request.orderId, request.editToken);
+      return jsonResponse({ success: true, order: tshirtOrderFromRow(record.values) });
+    }
+
+    if (request.action === 'resendTshirtConfirmation') {
+      const record = findPrivateTshirtOrder(request.orderId, request.editToken);
+      sendTshirtConfirmation(tshirtOrderFromRow(record.values), request.editToken);
+      return jsonResponse({ success: true, emailSent: true });
     }
 
     if (request.action === 'reviewPhoto') {
@@ -361,6 +394,166 @@ function escapeHtmlForEmail(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function setupTshirtSheet() {
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = spreadsheet.getSheetByName(TSHIRT_SHEET_NAME);
+  if (!sheet) sheet = spreadsheet.insertSheet(TSHIRT_SHEET_NAME);
+  sheet.getRange(1, 1, 1, TSHIRT_HEADERS.length).setValues([TSHIRT_HEADERS])
+    .setBackground('#075a36').setFontColor('#ffd83d').setFontWeight('bold');
+  sheet.setFrozenRows(1);
+  sheet.autoResizeColumns(1, TSHIRT_HEADERS.length);
+  sheet.hideColumns(TSHIRT_HEADERS.length);
+  MailApp.getRemainingDailyQuota();
+  console.log('T-shirt order sheet is ready. Deadline: ' + tshirtDeadlineLabel());
+}
+
+function getTshirtConfig() {
+  return {
+    deadline: TSHIRT_ORDER_DEADLINE,
+    timeZone: TSHIRT_ORDER_TIME_ZONE,
+    acceptingOrders: Date.now() < Date.parse(TSHIRT_ORDER_DEADLINE)
+  };
+}
+
+function tshirtDeadlineLabel() {
+  return Utilities.formatDate(
+    new Date(Date.parse(TSHIRT_ORDER_DEADLINE) - 60000),
+    TSHIRT_ORDER_TIME_ZONE,
+    "EEEE, MMMM d, yyyy 'at' h:mm a 'Eastern time (New York)'"
+  );
+}
+
+function getTshirtSheet() {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(TSHIRT_SHEET_NAME);
+  if (!sheet) throw new Error('The T-shirt form is not set up yet. The organizer must run setupTshirtSheet and redeploy the Apps Script web app.');
+  return sheet;
+}
+
+function validateTshirtCredentials(orderId, editToken) {
+  if (typeof orderId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId) ||
+      typeof editToken !== 'string' || !/^[0-9a-f]{64}$/.test(editToken)) {
+    throw new Error('This private order link is invalid. Use the full link in your confirmation email.');
+  }
+}
+
+function tshirtTokenHash(editToken) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, editToken, Utilities.Charset.UTF_8)
+    .map(byte => ((byte + 256) % 256).toString(16).padStart(2, '0')).join('');
+}
+
+function findPrivateTshirtOrder(orderId, editToken) {
+  validateTshirtCredentials(orderId, editToken);
+  const sheet = getTshirtSheet();
+  const rowNumber = findRowById(sheet, orderId);
+  const values = rowNumber ? sheet.getRange(rowNumber, 1, 1, TSHIRT_HEADERS.length).getValues()[0] : null;
+  if (!values || values[TSHIRT_HEADERS.length - 1] !== tshirtTokenHash(editToken)) {
+    throw new Error('This private order link is invalid. Use the full link in your confirmation email.');
+  }
+  return { sheet, rowNumber, values };
+}
+
+function requireTshirtText(value, label, maxLength) {
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > maxLength || /[\u0000-\u001f\u007f]/.test(value)) {
+    throw new Error(label + ' is required and must be no more than ' + maxLength + ' characters.');
+  }
+  return value.trim();
+}
+
+function validateTshirtOrder(order) {
+  if (!order || typeof order !== 'object' || Array.isArray(order)) throw new Error('T-shirt order data is required.');
+  validateTshirtCredentials(order.id, order.editToken);
+  const contactName = requireTshirtText(order.contactName, 'Primary contact name', 100);
+  const email = requireTshirtText(order.email, 'Email address', 254);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Enter a valid email address.');
+  if (!Number.isInteger(order.memberCount) || order.memberCount < 1 || order.memberCount > 10) {
+    throw new Error('Choose between 1 and 10 family members.');
+  }
+  if (!Array.isArray(order.members) || order.members.length !== order.memberCount) {
+    throw new Error('Complete one name and shirt size for every selected family member.');
+  }
+  const members = order.members.map((member, index) => {
+    if (!member || typeof member !== 'object') throw new Error('Complete family member ' + (index + 1) + '.');
+    const name = requireTshirtText(member.name, 'Family member ' + (index + 1) + ' name', 100);
+    if (!TSHIRT_SIZES.includes(member.size)) throw new Error('Choose a valid shirt size for family member ' + (index + 1) + '.');
+    return { name, size: member.size };
+  });
+  return { id: order.id, contactName, email, memberCount: order.memberCount, members };
+}
+
+function tshirtOrderFromRow(row) {
+  const memberCount = Number(row[3]);
+  if (!Number.isInteger(memberCount) || memberCount < 1 || memberCount > 10) {
+    throw new Error('The saved T-shirt order is incomplete. Contact the reunion organizer.');
+  }
+  return {
+    id: row[0], contactName: row[1], email: row[2], memberCount,
+    members: Array.from({ length: memberCount }, (_, index) => ({
+      name: row[4 + index * 2], size: row[5 + index * 2]
+    }))
+  };
+}
+
+function saveTshirtOrder(order) {
+  if (!getTshirtConfig().acceptingOrders) {
+    throw new Error('T-shirt orders and edits closed on ' + tshirtDeadlineLabel() + '.');
+  }
+  const savedOrder = validateTshirtOrder(order);
+  const sheet = getTshirtSheet();
+  const rowNumber = findRowById(sheet, savedOrder.id);
+  const existing = rowNumber ? findPrivateTshirtOrder(savedOrder.id, order.editToken) : null;
+  const now = new Date();
+  const values = [
+    savedOrder.id, sanitizeText(savedOrder.contactName), sanitizeText(savedOrder.email), savedOrder.memberCount,
+    ...Array.from({ length: 10 }, (_, index) => {
+      const member = savedOrder.members[index];
+      return member ? [sanitizeText(member.name), member.size] : ['', ''];
+    }).flat(),
+    existing ? existing.values[TSHIRT_HEADERS.length - 3] : now,
+    now, tshirtTokenHash(order.editToken)
+  ];
+  if (rowNumber) sheet.getRange(rowNumber, 1, 1, values.length).setValues([values]);
+  else sheet.appendRow(values);
+  try {
+    sendTshirtConfirmation(savedOrder, order.editToken);
+  } catch (error) {
+    console.error('T-shirt confirmation email failed for order ' + savedOrder.id + ': ' + error.message);
+    return {
+      order: savedOrder,
+      emailSent: false,
+      warning: 'Your order was saved, but the confirmation email could not be sent. Save your private edit link and use Retry confirmation email.'
+    };
+  }
+  return { order: savedOrder, emailSent: true };
+}
+
+function sendTshirtConfirmation(order, editToken) {
+  const editUrl = TSHIRT_ORDER_PAGE + '#order=' + encodeURIComponent(order.id) + '&token=' + encodeURIComponent(editToken);
+  const memberLines = order.members.map((member, index) => (index + 1) + '. ' + member.name + ' - ' + member.size);
+  const body = [
+    'Family T-Shirt Order Form - confirmation',
+    '', 'Contact Name: ' + order.contactName, 'Email Address: ' + order.email,
+    'Number of Family Members: ' + order.memberCount, '', ...memberLines, '',
+    'Please verify all shirt sizes. You may edit your response until ' + tshirtDeadlineLabel() + '.',
+    'View or edit your order: ' + editUrl,
+    'Keep this link private. Anyone with this link can view your order and edit it before the deadline.',
+    '', 'One response per family: use this link to update your existing order instead of submitting another response.',
+    'Order reference: ' + order.id
+  ].join('\n');
+  MailApp.sendEmail({
+    to: order.email,
+    subject: 'Jamaica Reunion - Family T-Shirt Order Confirmation',
+    body,
+    htmlBody: '<h1>Family T-Shirt Order Confirmation</h1><p><strong>Contact:</strong> ' + escapeHtmlForEmail(order.contactName) +
+      '<br><strong>Email:</strong> ' + escapeHtmlForEmail(order.email) +
+      '<br><strong>Family members:</strong> ' + order.memberCount + '</p><ol>' +
+      order.members.map(member => '<li>' + escapeHtmlForEmail(member.name) + ' - ' + escapeHtmlForEmail(member.size) + '</li>').join('') +
+      '</ol><p>Please verify all shirt sizes. You may edit your response until ' + escapeHtmlForEmail(tshirtDeadlineLabel()) + '.</p>' +
+      '<p><a href="' + escapeHtmlForEmail(editUrl) + '">View or edit your family order</a></p>' +
+      '<p>Keep this link private: it provides access to your order. Submit one response per family; use this link for updates.</p>' +
+      '<p>Order reference: ' + escapeHtmlForEmail(order.id) + '</p>'
+  });
 }
 
 function upsertRsvp(rsvp) {
