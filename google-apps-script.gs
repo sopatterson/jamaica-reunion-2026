@@ -326,7 +326,7 @@ function renderPhotoReviewPage(parameters) {
     '<p><strong>Submitted by:</strong> ' + escapeHtmlForEmail(review.submitter) + '</p>' +
     '<p>' + escapeHtmlForEmail(statusText) + '</p>' +
     '<img src="' + imageUrl + '" alt="Submitted family photo" style="display:block;height:auto;max-height:65vh;max-width:100%;object-fit:contain;">' +
-    '<form method="post" action="' + serviceUrl + '" style="display:flex;gap:12px;margin-top:20px;">' +
+    '<form method="post" action="' + serviceUrl + '" target="_top" style="display:flex;gap:12px;margin-top:20px;">' +
     '<input type="hidden" name="action" value="reviewPhoto"><input type="hidden" name="id" value="' + escapeHtmlForEmail(fileId) + '">' +
     '<input type="hidden" name="token" value="' + escapeHtmlForEmail(token) + '">' +
     '<button name="decision" value="approve"' + disabled + ' style="background:#075a36;border:0;border-radius:4px;color:white;font-size:16px;font-weight:bold;padding:12px 18px;">Approve</button>' +

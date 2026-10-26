@@ -1,6 +1,28 @@
 # jamaica-reunion-2026
 Family Reunion 2026
 
+## Family photo uploads and approval
+
+Use **Upload Family Photos** on the main page to select one or more JPG, PNG,
+or WebP images, up to 8 MB each. Enter your name first. Photos upload one at a
+time with progress feedback and remain private until reviewed. If some uploads
+fail, **Retry Failed Photos** retries only those photos, not successful uploads.
+Choosing a new selection replaces the retry queue.
+
+Review emails go to the configured photo reviewer. The **Approve** and
+**Reject** form submits at the top browser level because Google Apps Script
+pages run inside a sandboxed frame; posting within that frame causes Google's
+“refused to connect” error. Existing review links use the corrected form after
+the backend is redeployed. Approval publishes the image to the carousel on the
+next website load; rejection removes it from the review queue.
+
+Publish the main page and deploy the backend using the deployment instructions
+below. Run the photo regression tests with:
+
+```sh
+node --test tests/photos.test.cjs
+```
+
 ## Flight tracker
 
 The flight tracker lists families alphabetically, with arrival and departure

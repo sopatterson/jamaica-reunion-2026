@@ -1185,6 +1185,10 @@
             border-bottom: 1px solid #d5e5da;
         }
 
+        .photo-upload [hidden] {
+            display: none;
+        }
+
         .photo-upload input[type="text"] {
             width: min(100%, 280px);
             min-height: 44px;
@@ -1266,9 +1270,10 @@
     <form class="photo-upload" id="photoUploadForm">
         <label class="sr-only" for="photoSubmitter">Your name</label>
         <input id="photoSubmitter" type="text" maxlength="80" placeholder="Your name" required>
-        <input class="sr-only" id="photoFile" type="file" accept="image/jpeg,image/png,image/webp" required>
-        <button class="action-button" id="choosePhoto" type="button">Upload a Family Photo</button>
-        <p class="photo-upload-status" id="photoUploadStatus" aria-live="polite">Photos are reviewed before being added.</p>
+        <input class="sr-only" id="photoFile" type="file" accept="image/jpeg,image/png,image/webp" multiple required>
+        <button class="action-button" id="choosePhoto" type="button">Upload Family Photos</button>
+        <button class="action-button" id="retryPhotos" type="submit" hidden>Retry Failed Photos</button>
+        <p class="photo-upload-status" id="photoUploadStatus" aria-live="polite">Select one or more JPG, PNG, or WebP photos, up to 8 MB each. Photos are reviewed before being added.</p>
     </form>
 
     <!-- Main Content -->
@@ -2072,8 +2077,11 @@
         const photoSubmitter = document.getElementById('photoSubmitter');
         const photoUploadStatus = document.getElementById('photoUploadStatus');
         const choosePhoto = document.getElementById('choosePhoto');
+        const retryPhotos = document.getElementById('retryPhotos');
         const allowedPhotoTypes = ['image/jpeg', 'image/png', 'image/webp'];
         const maxPhotoBytes = 8 * 1024 * 1024;
+        let failedPhotoFiles = [];
+        let uploadingPhotos = false;
 
         choosePhoto.addEventListener('click', () => {
             if (!photoSubmitter.reportValidity()) return;
@@ -2081,44 +2089,68 @@
         });
 
         photoFile.addEventListener('change', () => {
-            if (photoFile.files.length > 0) photoUploadForm.requestSubmit();
+            if (photoFile.files.length > 0) {
+                failedPhotoFiles = [];
+                retryPhotos.hidden = true;
+                photoUploadForm.requestSubmit();
+            }
         });
 
         photoUploadForm.addEventListener('submit', async event => {
             event.preventDefault();
-            const file = photoFile.files[0];
-            if (!file || !allowedPhotoTypes.includes(file.type)) {
-                photoUploadStatus.textContent = 'Choose a JPG, PNG, or WebP image.';
+            if (uploadingPhotos) return;
+            const files = failedPhotoFiles.length ? failedPhotoFiles : Array.from(photoFile.files);
+            if (files.length === 0) {
+                photoUploadStatus.textContent = 'Choose one or more JPG, PNG, or WebP images.';
                 return;
             }
-            if (file.size > maxPhotoBytes) {
-                photoUploadStatus.textContent = 'Choose an image smaller than 8 MB.';
+            const invalidFiles = files.filter(file => !allowedPhotoTypes.includes(file.type) || file.size === 0 || file.size > maxPhotoBytes);
+            if (invalidFiles.length > 0) {
+                photoUploadStatus.textContent = `No photos uploaded. Choose nonempty JPG, PNG, or WebP images up to 8 MB each. Check: ${invalidFiles.map(file => file.name).join(', ')}.`;
                 return;
             }
 
+            uploadingPhotos = true;
             choosePhoto.disabled = true;
-            photoUploadStatus.textContent = 'Uploading photo for review...';
+            retryPhotos.disabled = true;
+            photoSubmitter.disabled = true;
+            photoFile.disabled = true;
+            const submitter = photoSubmitter.value.trim();
+            failedPhotoFiles = [];
+            const failures = [];
+            let submitted = 0;
             try {
-                const data = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(String(reader.result).split(',')[1]);
-                    reader.onerror = () => reject(new Error('The selected photo could not be read.'));
-                    reader.readAsDataURL(file);
-                });
-                await requestRsvp('submitPhoto', {
-                    photo: {
-                        submitter: photoSubmitter.value.trim(),
-                        fileName: file.name,
-                        mimeType: file.type,
-                        data
+                for (const [index, file] of files.entries()) {
+                    photoUploadStatus.textContent = `Uploading photo ${index + 1} of ${files.length}: ${file.name}...`;
+                    try {
+                        const data = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(String(reader.result).split(',')[1]);
+                            reader.onerror = () => reject(new Error('The selected photo could not be read.'));
+                            reader.onabort = () => reject(new Error('Reading the selected photo was canceled.'));
+                            reader.readAsDataURL(file);
+                        });
+                        await requestRsvp('submitPhoto', {
+                            photo: { submitter, fileName: file.name, mimeType: file.type, data }
+                        });
+                        submitted += 1;
+                    } catch (error) {
+                        failedPhotoFiles.push(file);
+                        failures.push(`${file.name}: ${error.message}`);
                     }
-                });
-                photoUploadForm.reset();
-                photoUploadStatus.textContent = 'Photo submitted. You will see it after it has been reviewed.';
-            } catch (error) {
-                photoUploadStatus.textContent = `Photo upload failed: ${error.message}`;
+                }
+                photoUploadStatus.textContent = `${submitted} of ${files.length} photos submitted for review. ` +
+                    (failures.length
+                        ? `Failed: ${failures.join('; ')}. Retry failed photos below, or choose a new selection. Photos already submitted will not be resent by Retry.`
+                        : 'You will see them after they have been reviewed.');
+                retryPhotos.hidden = failures.length === 0;
+                if (failures.length === 0) photoUploadForm.reset();
             } finally {
+                uploadingPhotos = false;
                 choosePhoto.disabled = false;
+                retryPhotos.disabled = false;
+                photoSubmitter.disabled = false;
+                photoFile.disabled = false;
             }
         });
 
