@@ -8,6 +8,74 @@ const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
 const source = fs.readFileSync(path.join(__dirname, '../google-apps-script.gs'), 'utf8');
 const uploadScript = html.slice(html.indexOf("        const photoUploadForm ="), html.indexOf("        document.getElementById('addRsvp')"));
 
+function carousel() {
+    const element = tag => ({
+        tag, style: { setProperty(name, value) { this[name] = value; } },
+        classes: [], attributes: {}, children: [],
+        classList: { add(name) { this.owner.classes.push(name); } },
+        setAttribute(name, value) { this.attributes[name] = value; },
+        appendChild(child) { this.children.push(child); }
+    });
+    const context = vm.createContext({
+        document: { createElement(tag) {
+            const node = element(tag);
+            node.classList.owner = node;
+            return node;
+        } }
+    });
+    vm.runInContext(html.slice(html.indexOf('        const carouselMedia ='), html.indexOf('        function initializeCarousel()')), context);
+    return context;
+}
+
+test('listed uploads show the full centered photo in both carousel copies', () => {
+    const context = carousel();
+    const names = vm.runInContext("Object.keys(approvedPhotoFraming).filter(name => !approvedPhotoFraming[name].rotateLeft && !approvedPhotoFraming[name].zoom)", context);
+    assert.equal(names.length, 29);
+    for (const name of names) {
+        for (const duplicate of [false, true]) {
+            context.photo = { name: name + '.jpeg', url: 'https://example.com/photo.jpg' };
+            context.duplicate = duplicate;
+            const slide = vm.runInContext('createCarouselSlide(approvedPhotoMedia(photo), duplicate)', context);
+            assert.equal(slide.children[0].style.objectPosition, 'center center');
+            assert.equal(slide.children[0].style.objectFit, 'contain');
+            assert.ok(slide.classes.includes('carousel-slide--full-photo'));
+            assert.equal(slide.attributes['aria-hidden'], duplicate ? 'true' : undefined);
+        }
+    }
+    assert.match(html, /\.carousel-slide--full-photo:hover img\s*\{\s*transform: var\(--photo-transform, scale\(1\)\);/);
+});
+
+test('rotation and persistent zoom target only the requested uploads', () => {
+    const context = carousel();
+    for (const duplicate of [false, true]) {
+        context.duplicate = duplicate;
+        context.photo = { name: '20261101-215727-IMG_0496.JPEG', url: 'rotation.jpg' };
+        const rotated = vm.runInContext('createCarouselSlide(approvedPhotoMedia(photo), duplicate)', context);
+        assert.ok(rotated.classes.includes('carousel-slide--rotated'));
+        assert.equal(rotated.children[0].style.objectFit, 'contain');
+        context.photo = { name: '20261025-204333-58aa5224-72a0-4f58-bbc9-dc6021312bcf.jpeg', url: 'zoom.jpg' };
+        const zoomed = vm.runInContext('createCarouselSlide(approvedPhotoMedia(photo), duplicate)', context);
+        assert.equal(zoomed.children[0].style['--photo-zoom'], 1.35);
+        assert.equal(zoomed.children[0].style.transformOrigin, 'center 65%');
+        assert.equal(zoomed.children[0].style.objectFit, undefined);
+    }
+    assert.match(html, /--photo-transform: translate\(-50%, -50%\) rotate\(-90deg\)/);
+    assert.match(html, /width: var\(--slide-height\);\s*height: var\(--slide-width\)/);
+    assert.match(html, /--slide-width: 240px;\s*--slide-height: 180px/);
+    assert.match(html, /const media = approvedPhotoMedia\(photo\)/);
+});
+
+test('unlisted uploads and existing bundled framing are unchanged', () => {
+    const context = carousel();
+    context.photo = { name: 'unlisted.jpeg', url: 'unlisted.jpg' };
+    const media = vm.runInContext('approvedPhotoMedia(photo)', context);
+    assert.deepEqual(JSON.parse(JSON.stringify(media)), { type: 'image', src: 'unlisted.jpg' });
+    const legacy = vm.runInContext("createCarouselSlide(carouselMedia.find(media => media.src === 'images/20170610_145150.jpg'), false)", context);
+    assert.equal(legacy.children[0].style.objectPosition, 'center 65%');
+    assert.equal(legacy.children[0].style.objectFit, undefined);
+    assert.equal(legacy.classes.length, 0);
+});
+
 function uploader(files) {
     const elements = new Map();
     const element = id => {

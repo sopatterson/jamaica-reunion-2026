@@ -874,6 +874,45 @@
             font-weight: 700;
         }
 
+        footer .footer-heritage {
+            max-width: 48rem;
+            margin: 2rem auto 0;
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.15rem, 3vw, 1.5rem);
+            line-height: 1.7;
+        }
+
+        footer .footer-family-motto {
+            margin-top: 0.75rem;
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.35rem, 4vw, 1.85rem);
+            font-weight: 700;
+        }
+
+        .footer-national-emblem {
+            box-sizing: border-box;
+            width: min(100%, 22rem);
+            margin: 2.5rem auto 0;
+            padding: 1.5rem;
+            border: 1px solid var(--jamaica-yellow);
+            border-radius: 12px;
+            background: #fffdf5;
+            color: var(--jamaica-black);
+        }
+
+        .footer-national-emblem img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .footer-national-emblem figcaption {
+            margin-top: 1rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
         /* Agenda Section Styles */
         .agenda-day {
             background: white;
@@ -1151,9 +1190,12 @@
         }
 
         .carousel-slide {
+            --slide-width: 320px;
+            --slide-height: 240px;
+            position: relative;
             flex-shrink: 0;
-            width: 320px;
-            height: 240px;
+            width: var(--slide-width);
+            height: var(--slide-height);
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
@@ -1169,9 +1211,30 @@
             transition: transform 0.4s ease;
         }
 
+        .carousel-slide img {
+            transform: var(--photo-transform, scale(1)) scale(var(--photo-zoom, 1));
+        }
+
         .carousel-slide:hover img,
         .carousel-slide:hover video {
             transform: scale(1.05);
+        }
+
+        .carousel-slide:hover img {
+            transform: var(--photo-transform, scale(1)) scale(calc(var(--photo-zoom, 1) * 1.05));
+        }
+
+        .carousel-slide--rotated img {
+            width: var(--slide-height);
+            height: var(--slide-width);
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            --photo-transform: translate(-50%, -50%) rotate(-90deg);
+        }
+
+        .carousel-slide--full-photo:hover img {
+            transform: var(--photo-transform, scale(1));
         }
 
         .photo-upload {
@@ -1218,8 +1281,8 @@
 
         @media (max-width: 768px) {
             .carousel-slide {
-                width: 240px;
-                height: 180px;
+                --slide-width: 240px;
+                --slide-height: 180px;
             }
         }
 
@@ -1257,7 +1320,7 @@
         </div>
 
         <p class="tagline">
-            "Celebrating Our Past, Present & Future — All Generations, All Together, All-Inclusive"
+            Honoring Our Roots, Celebrating Our Heritage, Building Our Legacy.
         </p>
 
         <div class="scroll-down">⬇</div>
@@ -1411,9 +1474,8 @@
                     <p>Check-in at Iberostar Rose Hall (3:00 PM)</p>
                     <p>Family reunion T-shirts will be given out</p>
                     <p>Settle into rooms, explore the resort</p>
-                    <p>Welcome dinner and family meet & greet</p>
-                    <p style="margin-top: 1rem; font-style: italic; color: #888;">(Specific timing and activities to be
-                        added)</p>
+                    <p><strong>6:00 PM - Welcome dinner on the terrace</strong></p>
+                    <p>Family meet & greet, gift bags, and a review of plans for the week</p>
                 </div>
             </div>
 
@@ -1567,14 +1629,20 @@
         <p class="footer-logo">🇯🇲 Jamaica Family Reunion 2026 🇯🇲</p>
         <p style="font-size: 1.4rem; margin: 1.5rem 0;">Iberostar Rose Hall • Montego Bay</p>
         <p>November 23-29, 2026 • Thanksgiving Week</p>
-        <p style="margin-top: 2rem; font-style: italic;">"One Love, One Heart, One Family"</p>
-        <p style="margin-top: 0.5rem;">Out of Many, One People 💚💛🖤</p>
+        <p class="footer-heritage">Honoring Our Roots, Celebrating Our Heritage, Building Our Legacy...</p>
+        <p class="footer-family-motto">Out of Many, One Family</p>
 
         <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.15);">
             <p style="font-size: 0.9rem; opacity: 0.7; margin-bottom: 1rem; letter-spacing: 1px;">SITE VISITORS</p>
             <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fsopatterson.github.io%2Fjamaica-reunion-2026%2F&count_bg=%23009B3A&title_bg=%23000000&icon=&icon_color=%23FCD116&title=visits&edge_flat=false"
                 alt="Visitor count" style="border-radius: 6px;" />
         </div>
+        <figure class="footer-national-emblem">
+            <img src="images/jamaica-coat-of-arms.svg"
+                alt="Jamaica's coat of arms, with its national motto: Out of Many, One People"
+                loading="lazy" decoding="async" />
+            <figcaption>Out of Many, One People</figcaption>
+        </figure>
     </footer>
 
     <script src="vendor/xlsx.full.min.js"></script>
@@ -1611,6 +1679,48 @@
             { type: 'image', src: 'images/nj-fam.JPG', position: 'center center' }
         ];
 
+        const approvedPhotoFraming = {
+            ...Object.fromEntries([
+                '20261101-220315-48ddeffc-7c5a-4716-8cbc-40cafb8fa5ea',
+                '20261103-231447-IMG_7778',
+                '20261101-220312-c2c84987-147b-4186-a4b5-1b16145c3314',
+                '20261101-215721-IMG_0493',
+                '20261101-215810-IMG_0503',
+                '20261103-231434-IMG_9087',
+                '20261101-220948-IMG_9757',
+                '20261101-212106-IMG_5337',
+                '20261101-220144-9faf252f-04d2-4f54-87fb-225c406e7562',
+                '20261101-215901-IMG_0514',
+                '20261101-215550-IMG_0186',
+                '20261101-220334-a9c30ff4-07e8-4ae1-9612-b1d5f34d649d',
+                '20261101-220215-1edec12c-5be1-48f6-b799-c97f27339545',
+                '20261101-220211-73a19690-95cd-4135-8fbf-4c394b7764ca',
+                '20261101-220730-IMG_1599',
+                '20261103-231441-IMG_3216',
+                '20261101-212008-IMG_1778',
+                '20261101-220319-IMG_5354',
+                '20261101-220219-a8f1c581-31d5-4c36-9235-a96592c0a3b5',
+                '20261101-212139-IMG_8889',
+                '20261101-215731-IMG_0495',
+                '20261101-215921-IMG_0646',
+                '20261101-220130-3dd36aed-2ed8-4ccf-989b-1b2f1888281e',
+                '20261101-215905-IMG_0515',
+                '20261101-221026-IMG_1672',
+                '20261019-200103-IMG_6981',
+                '20261019-194256-90e406f6-05eb-4090-ad5d-0a19b6f11b9b',
+                '20261019-195110-IMG_7220',
+                '20261019-200002-IMG_7434'
+            ].map(name => [name, { fit: 'contain', position: 'center center' }])),
+            '20261101-215727-IMG_0496': { fit: 'contain', position: 'center center', rotateLeft: true },
+            '20261025-204333-58aa5224-72a0-4f58-bbc9-dc6021312bcf': { position: 'center center', zoom: 1.35 }
+        };
+
+        function approvedPhotoMedia(photo) {
+            const name = String(photo.name || '').replace(/\.(jpe?g|png|webp)$/i, '');
+            const framing = Object.hasOwn(approvedPhotoFraming, name) ? approvedPhotoFraming[name] : {};
+            return { type: 'image', src: photo.url, ...framing };
+        }
+
         function shuffleMedia(media) {
             for (let index = media.length - 1; index > 0; index -= 1) {
                 const randomIndex = Math.floor(Math.random() * (index + 1));
@@ -1640,6 +1750,13 @@
                 image.loading = 'eager';
                 image.decoding = 'async';
                 if (media.position) image.style.objectPosition = media.position;
+                if (media.fit) image.style.objectFit = media.fit;
+                if (media.fit === 'contain') slide.classList.add('carousel-slide--full-photo');
+                if (media.rotateLeft) slide.classList.add('carousel-slide--rotated');
+                if (media.zoom) {
+                    image.style.setProperty('--photo-zoom', media.zoom);
+                    image.style.transformOrigin = 'center 65%';
+                }
                 slide.appendChild(image);
             }
 
@@ -1682,7 +1799,7 @@
                 if (!result.success || !Array.isArray(result.photos)) throw new Error(result.error || 'Approved photos could not be loaded.');
                 result.photos.forEach(photo => {
                     if (photo && photo.url && !carouselMedia.some(media => media.src === photo.url)) {
-                        const media = { type: 'image', src: photo.url };
+                        const media = approvedPhotoMedia(photo);
                         carouselMedia.push(media);
                         document.querySelectorAll('.carousel-group').forEach((group, index) => {
                             group.appendChild(createCarouselSlide(media, index > 0));

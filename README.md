@@ -1,6 +1,13 @@
 # jamaica-reunion-2026
 Family Reunion 2026
 
+## Footer artwork
+
+The main-page footer uses a locally bundled [Jamaican coat of arms](images/jamaica-coat-of-arms.svg)
+with Jamaica's national motto, **Out of Many, One People**, separate from the
+reunion's **Out of Many, One Family** message. The public-domain artwork is from
+[Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Coat_of_arms_of_Jamaica.svg).
+
 ## Family photo uploads and approval
 
 Use **Upload Family Photos** on the main page to select one or more JPG, PNG,
@@ -15,6 +22,20 @@ pages run inside a sandboxed frame; posting within that frame causes Google's
 “refused to connect” error. Existing review links use the corrected form after
 the backend is redeployed. Approval publishes the image to the carousel on the
 next website load; rejection removes it from the review queue.
+
+Use **Review pending photos in bulk** in any review email or individual review
+page to open the private organizer queue, including older pending uploads.
+Preview photos, select individual checkboxes or **Select all**, then choose
+**Approve selected** or **Reject selected**. Already-reviewed photos are skipped;
+any per-photo failures are displayed for retry without repeating successful
+decisions. Keep review links private: they authorize access to the entire queue.
+
+Selected approved uploads have filename-specific framing in `approvedPhotoFraming`
+in [index.html](index.html). Full-photo framing centers the entire image without
+cropping, including on hover. Rotation and zoom adjustments apply to both carousel
+copies at desktop and mobile sizes; unlisted uploads and older bundled photos
+retain their existing framing. Publish the main page to apply framing updates;
+no backend redeployment is needed.
 
 Publish the main page and deploy the backend using the deployment instructions
 below. Run the photo regression tests with:
